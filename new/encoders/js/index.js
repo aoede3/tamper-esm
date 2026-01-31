@@ -1,6 +1,13 @@
-export { default as createPackSet, PackSet } from './lib/createPackSet.js';
-export { default as createPack } from './lib/createPack.js';
-export { default as Pack } from './lib/Pack.js';
-export { default as IntegerPack } from './lib/IntegerPack.js';
-export { default as BitmapPack } from './lib/BitmapPack.js';
-export { default as ExistencePack } from './lib/ExistencePack.js';
+import createEncoder from './core/createEncoder.js';
+import nodeEnv from './env/node.js';
+
+const encoder = createEncoder(nodeEnv);
+
+export const createPackSet = encoder.createPackSet;
+export const PackSet = encoder.PackSet;
+export const createPack = encoder.createPack;
+export const Pack = encoder.Pack;
+export const IntegerPack = encoder.IntegerPack;
+export const BitmapPack = encoder.BitmapPack;
+export const ExistencePack = encoder.ExistencePack;
+export const Bitpusher = encoder.Bitpusher;

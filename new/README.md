@@ -7,7 +7,7 @@ plus parity tooling to keep output identical to the legacy implementation.
 
 - Node.js (ESM-capable; tested locally with current LTS).
 - Parity scripts are dependency-free; encoder runtime uses a local `bitsy` shim in
-  `new/node_modules/bitsy` to avoid network installs.
+  `new/vendor/bitsy` to avoid network installs.
 
 ## Directory layout
 
@@ -16,9 +16,10 @@ plus parity tooling to keep output identical to the legacy implementation.
 - `new/legacy/tamper.cjs`: frozen copy of the legacy decoder (CommonJS).
 - `new/scripts/`: parity runner scripts.
 - `new/test/`:
-  - `canonical-output/`: golden JSON packs for strict parity checks.
-  - `datasets/`: source datasets used to generate packs.
-  - `config.json`: encoder attribute configuration.
+- `canonical-output/`: golden JSON packs for strict parity checks.
+- `datasets/`: source datasets used to generate packs.
+- `packs/`: decoder-only sample packs (no canonical output expected).
+- `config.json`: encoder attribute configuration.
   - `node_modules/`: small shims (`atob`, `underscore`) for the legacy decoder copy.
 
 ## Client decoder (ESM)
@@ -41,7 +42,9 @@ const items = tamper.unpackData(data);
 
 ## Encoder (ESM)
 
-Entry point: `new/encoders/js/index.js`
+Entry points:
+- Node/standard ESM: `new/encoders/js/index.js`
+- Browser/edge: build from core + env adapter
 
 Exports:
 - `createPackSet`, `PackSet`
@@ -51,6 +54,19 @@ Example:
 
 ```js
 import { createPackSet } from './encoders/js/index.js';
+
+const tamp = createPackSet();
+// configure attributes + pack data...
+const json = tamp.toJSON();
+```
+
+Browser/edge example (core + env adapter):
+
+```js
+import createEncoder from './encoders/js/core/createEncoder.js';
+import browserEnv from './encoders/js/env/browser.js';
+
+const { createPackSet } = createEncoder(browserEnv);
 
 const tamp = createPackSet();
 // configure attributes + pack data...
@@ -89,6 +105,8 @@ npm --prefix new run test:all
   (including fields like `max_guid` and the full existence metadata).
 - This `new/` directory is isolated from the legacy code; no files outside
   `new/` are modified.
+- The browser encoder uses `Uint8Array` + `DataView` and a local bitset
+  implementation (no Node `Buffer` required).
 
 ## Expected output
 
