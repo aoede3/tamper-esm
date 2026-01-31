@@ -1,20 +1,20 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import createTamper from '../clients/js/src/tamper.js';
+import fs from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import createTamper from "../clients/js/src/tamper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, '..');
+const rootDir = path.resolve(__dirname, "..");
 
 const relPath = process.argv[2];
 if (!relPath) {
-  console.error('Usage: node new/scripts/inspect-pack.mjs <path-to-pack.json>');
+  console.error("Usage: node scripts/inspect-pack.mjs <path-to-pack.json>");
   process.exit(1);
 }
 
 const filePath = path.resolve(rootDir, relPath);
-const raw = await fs.readFile(filePath, 'utf8');
+const raw = await fs.readFile(filePath, "utf8");
 const data = JSON.parse(raw);
 const tamper = createTamper();
 const items = tamper.unpackData(data);
@@ -25,7 +25,7 @@ const existence = data.existence || {};
 
 function packBytes(pack) {
   if (!pack) return 0;
-  return Buffer.from(pack, 'base64').length;
+  return Buffer.from(pack, "base64").length;
 }
 
 let totalPackBytes = packBytes(existence.pack);
@@ -35,7 +35,7 @@ const perAttr = attributes.map((attr) => {
   return {
     attr_name: attr.attr_name,
     encoding: attr.encoding,
-    bytes
+    bytes,
   };
 });
 
@@ -44,7 +44,7 @@ console.log(`json_bytes: ${stat.size}`);
 console.log(`items: ${items.length}`);
 console.log(`existence_bytes: ${packBytes(existence.pack)}`);
 console.log(`total_pack_bytes: ${totalPackBytes}`);
-console.log('attributes:');
+console.log("attributes:");
 perAttr.forEach((attr) => {
   console.log(`  - ${attr.attr_name} (${attr.encoding}): ${attr.bytes}`);
 });

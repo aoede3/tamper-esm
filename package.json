@@ -1,0 +1,8 @@
+{
+  "type": "module",
+  "scripts": {
+    "test:decoders": "node ./scripts/compare-decoders.mjs",
+    "test:encoders": "node ./scripts/compare-encoders.mjs",
+    "test": "node ./scripts/compare-decoders.mjs && node ./scripts/compare-encoders.mjs"
+  }
+}

@@ -45,12 +45,12 @@ class BitsyLite {
 function toBase64(bytes) {
   if (!bytes || !bytes.length) return undefined;
 
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(bytes).toString('base64');
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(bytes).toString("base64");
   }
 
-  if (typeof btoa === 'function') {
-    let binary = '';
+  if (typeof btoa === "function") {
+    let binary = "";
     const chunkSize = 0x8000;
     for (let i = 0; i < bytes.length; i += chunkSize) {
       const chunk = bytes.subarray(i, i + chunkSize);
@@ -59,7 +59,7 @@ function toBase64(bytes) {
     return btoa(binary);
   }
 
-  throw new Error('No base64 encoder available.');
+  throw new Error("No base64 encoder available.");
 }
 
 export default {
@@ -67,7 +67,11 @@ export default {
     return new Uint8Array(length);
   },
   writeUInt32BE(buffer, value, offset) {
-    const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    const view = new DataView(
+      buffer.buffer,
+      buffer.byteOffset,
+      buffer.byteLength,
+    );
     view.setUint32(offset, value, false);
   },
   writeUInt8(buffer, value, offset) {
@@ -91,5 +95,5 @@ export default {
   toBase64,
   createBitset(size) {
     return new BitsyLite(size);
-  }
+  },
 };

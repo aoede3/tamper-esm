@@ -1,0 +1,10 @@
+Tamper (ESM) - encoder/decoder
+
+Copyright © 2014 The New York Times Company
+Copyright © 2014 Ozan Turgut
+Copyright © 2026–present Aoede Ltd
+Author: John Smith
+
+This repository contains an ESM implementation of the Tamper
+serialisation protocol, with parity tooling and archived legacy sources
+under /legacy.

@@ -1,5 +1,5 @@
-import createEncoder from './core/createEncoder.js';
-import nodeEnv from './env/node.js';
+import createEncoder from "./core/createEncoder.js";
+import nodeEnv from "./env/node.js";
 
 const encoder = createEncoder(nodeEnv);
 

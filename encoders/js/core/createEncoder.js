@@ -1,5 +1,5 @@
-import setBit from './setBit.js';
-import { clone, merge, values, last, sortBy } from './utils.js';
+import setBit from "./setBit.js";
+import { clone, merge, values, last, sortBy } from "./utils.js";
 
 function log2(x) {
   return Math.log(x) / Math.LN2;
@@ -51,7 +51,8 @@ export default function createEncoder(env) {
 
   class Pack {
     constructor(attrName, possibilities, maxChoices) {
-      if (!possibilities) throw new Error(`Possibilities are empty for ${attrName}`);
+      if (!possibilities)
+        throw new Error(`Possibilities are empty for ${attrName}`);
 
       this.possibilities = possibilities.map((a) => `${a}`);
       this.attrName = attrName;
@@ -75,7 +76,7 @@ export default function createEncoder(env) {
         item_window_width: this.itemWindowWidth,
         bit_window_width: this.bitWindowWidth,
         max_choices: this.maxChoices,
-        max_guid: this.maxGuid ?? 0
+        max_guid: this.maxGuid ?? 0,
       };
 
       return merge(output, this.meta);
@@ -94,7 +95,7 @@ export default function createEncoder(env) {
   class IntegerPack extends Pack {
     constructor(attrName, possibilities, maxChoices) {
       super(attrName, possibilities, maxChoices);
-      this.encoding = 'integer';
+      this.encoding = "integer";
     }
 
     encode(idx, data) {
@@ -102,7 +103,8 @@ export default function createEncoder(env) {
       if (!Array.isArray(choices)) choices = [choices];
 
       for (let i = 0; i < this.maxChoices; i += 1) {
-        const choiceOffset = (this.itemWindowWidth) * idx + (this.bitWindowWidth * i);
+        const choiceOffset =
+          this.itemWindowWidth * idx + this.bitWindowWidth * i;
         const value = choices[i];
 
         const possibilityIndex = this.possibilities.indexOf(`${value}`);
@@ -112,7 +114,8 @@ export default function createEncoder(env) {
         const bitOffset = this.baseOffset + choiceOffset;
 
         for (let bitPos = 0; bitPos < this.bitWindowWidth; bitPos += 1) {
-          const bitValue = (possibilityId >> (this.bitWindowWidth - 1 - bitPos)) & 1;
+          const bitValue =
+            (possibilityId >> (this.bitWindowWidth - 1 - bitPos)) & 1;
           this.bitCounter += 1;
           setBit(this.buffer, bitOffset + bitPos, bitValue === 1);
         }
@@ -144,7 +147,7 @@ export default function createEncoder(env) {
   class BitmapPack extends Pack {
     constructor(attrName, possibilities, maxChoices) {
       super(attrName, possibilities, maxChoices);
-      this.encoding = 'bitmap';
+      this.encoding = "bitmap";
     }
 
     encode(idx, data) {
@@ -156,7 +159,11 @@ export default function createEncoder(env) {
       choices.forEach((choice) => {
         const choiceOffset = this.possibilities.indexOf(`${choice}`);
         if (choiceOffset !== -1) {
-          setBit(this.buffer, this.baseOffset + itemOffset + choiceOffset, true);
+          setBit(
+            this.buffer,
+            this.baseOffset + itemOffset + choiceOffset,
+            true,
+          );
         }
       });
     }
@@ -184,8 +191,8 @@ export default function createEncoder(env) {
 
   class ExistencePack extends Pack {
     constructor() {
-      super('existence', ['existence'], 1);
-      this.encoding = 'existence';
+      super("existence", ["existence"], 1);
+      this.encoding = "existence";
       this.lastGuid = 0;
       this.runCounter = 0;
       this.bitpusher = new Bitpusher();
@@ -205,11 +212,13 @@ export default function createEncoder(env) {
         this.bitpusher.push(1);
         this.runCounter += 1;
       } else if (guidDiff <= 0) {
-        throw new Error(`Error: data was not sorted by GUID (got ${this.lastGuid}, then ${guid})!`);
+        throw new Error(
+          `Error: data was not sorted by GUID (got ${this.lastGuid}, then ${guid})!`,
+        );
       } else if (guidDiff > 40) {
         this.dumpKeep(this.bitpusher, this.runCounter);
 
-        this.outputBuffers.push(this.controlCode('skip', guidDiff - 1));
+        this.outputBuffers.push(this.controlCode("skip", guidDiff - 1));
 
         this.bitpusher.clear();
         this.bitpusher.push(1);
@@ -236,17 +245,17 @@ export default function createEncoder(env) {
 
     toPlainObject() {
       return {
-        attr_name: 'existence',
-        display_name: '',
+        attr_name: "existence",
+        display_name: "",
         max_choices: 0,
         possibilities: null,
-        filter_type: '',
-        display_type: '',
+        filter_type: "",
+        display_type: "",
         encoding: this.encoding,
         pack: this.encodedBitset(),
         bit_window_width: 0,
         item_window_width: 0,
-        max_guid: this.maxGuid ?? 0
+        max_guid: this.maxGuid ?? 0,
       };
     }
 
@@ -254,9 +263,9 @@ export default function createEncoder(env) {
       if (runLen >= 40) {
         const length = bitpusher.length - runLen;
         this.dumpKeep(bitpusher.slice(0, length), 0);
-        this.outputBuffers.push(this.controlCode('run', runLen));
+        this.outputBuffers.push(this.controlCode("run", runLen));
       } else if (bitpusher.length > 0) {
-        this.outputBuffers.push(this.controlCode('keep', bitpusher.length));
+        this.outputBuffers.push(this.controlCode("keep", bitpusher.length));
         this.outputBuffers.push(bitpusher.getBuffer());
       }
     }
@@ -265,7 +274,7 @@ export default function createEncoder(env) {
       let buffer;
 
       switch (cmd) {
-        case 'keep': {
+        case "keep": {
           const bytesToKeep = Math.floor(offset / 8);
           const remainingBits = offset % 8;
 
@@ -275,12 +284,12 @@ export default function createEncoder(env) {
           env.writeUInt8(buffer, remainingBits, 5);
           break;
         }
-        case 'skip':
+        case "skip":
           buffer = env.createBuffer(5);
           env.writeUInt8(buffer, ExistencePack.SKIP, 0);
           env.writeUInt32BE(buffer, offset, 1);
           break;
-        case 'run':
+        case "run":
           buffer = env.createBuffer(5);
           env.writeUInt8(buffer, ExistencePack.RUN, 0);
           env.writeUInt32BE(buffer, offset, 1);
@@ -307,9 +316,11 @@ export default function createEncoder(env) {
     }
 
     addAttribute(opts) {
-      ['attrName', 'possibilities', 'maxChoices'].forEach((requiredOpt) => {
+      ["attrName", "possibilities", "maxChoices"].forEach((requiredOpt) => {
         if (opts[requiredOpt] === undefined) {
-          throw new Error(`${requiredOpt} is required when adding an attribute!`);
+          throw new Error(
+            `${requiredOpt} is required when adding an attribute!`,
+          );
         }
       });
 
@@ -333,7 +344,9 @@ export default function createEncoder(env) {
 
     addBufferedAttribute(opts) {
       if (opts.attr_name === undefined) {
-        throw new Error('attr_name is required when adding a buffered attribute!');
+        throw new Error(
+          "attr_name is required when adding a buffered attribute!",
+        );
       }
 
       const localOpts = clone(opts);
@@ -362,9 +375,11 @@ export default function createEncoder(env) {
     }
 
     buildPack(opts = {}, items) {
-      ['numItems', 'maxGuid'].forEach((requiredOpt) => {
+      ["numItems", "maxGuid"].forEach((requiredOpt) => {
         if (opts[requiredOpt] === undefined) {
-          throw new Error(`You must specify ${requiredOpt} to start building a pack!`);
+          throw new Error(
+            `You must specify ${requiredOpt} to start building a pack!`,
+          );
         }
       });
 
@@ -400,7 +415,7 @@ export default function createEncoder(env) {
     }
 
     buildUnorderedPack(opts, items) {
-      const guidAttr = opts.guidAttr || 'id';
+      const guidAttr = opts.guidAttr || "id";
       const data = {};
 
       items.forEach((item) => {
@@ -415,7 +430,7 @@ export default function createEncoder(env) {
     toPlainObject(opts = {}) {
       const output = {
         existence: this.existencePack.toPlainObject(),
-        attributes: values(this.attrPacks).map((pack) => pack.toPlainObject())
+        attributes: values(this.attrPacks).map((pack) => pack.toPlainObject()),
       };
 
       merge(output.attributes, values(this.bufferedAttrs));
@@ -428,12 +443,12 @@ export default function createEncoder(env) {
     }
   }
 
-  PackSet.DEFAULT_GUID_ATTR = 'id';
+  PackSet.DEFAULT_GUID_ATTR = "id";
 
   function createPack(attrName, possibilities, maxChoices) {
     let PackConstructor;
 
-    if ((maxChoices * log2(possibilities.length)) < possibilities.length) {
+    if (maxChoices * log2(possibilities.length) < possibilities.length) {
       PackConstructor = IntegerPack;
     } else {
       PackConstructor = BitmapPack;
@@ -454,6 +469,6 @@ export default function createEncoder(env) {
     Pack,
     IntegerPack,
     BitmapPack,
-    ExistencePack
+    ExistencePack,
   };
 }

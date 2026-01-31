@@ -1,23 +1,23 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import assert from 'node:assert/strict';
-import { fileURLToPath } from 'node:url';
-import { PackSet } from '../encoders/js/index.js';
+import fs from "node:fs/promises";
+import path from "node:path";
+import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
+import { PackSet } from "../encoders/js/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, '..');
-const datasetsDir = path.join(rootDir, 'test', 'datasets');
-const canonicalDir = path.join(rootDir, 'test', 'canonical-output');
-const configPath = path.join(rootDir, 'test', 'config.json');
+const rootDir = path.resolve(__dirname, "..");
+const datasetsDir = path.join(rootDir, "test", "datasets");
+const canonicalDir = path.join(rootDir, "test", "canonical-output");
+const configPath = path.join(rootDir, "test", "config.json");
 
-const config = JSON.parse(await fs.readFile(configPath, 'utf8'));
+const config = JSON.parse(await fs.readFile(configPath, "utf8"));
 
 function buildPackSet(items) {
   const packSet = new PackSet({
-    buffer_url: '',
-    default_thumbnail: '',
-    default_oneup: ''
+    buffer_url: "",
+    default_thumbnail: "",
+    default_oneup: "",
   });
 
   config.attrs.forEach((attr) => {
@@ -27,12 +27,12 @@ function buildPackSet(items) {
       maxChoices: attr.max_choices,
       display_name: attr.display_name,
       filter_type: attr.filter_type,
-      display_type: attr.display_type
+      display_type: attr.display_type,
     });
   });
 
   const maxGuid = items.length ? items[items.length - 1].guid : 0;
-  packSet.pack(items, { guidAttr: 'guid', maxGuid, numItems: items.length });
+  packSet.pack(items, { guidAttr: "guid", maxGuid, numItems: items.length });
   return packSet;
 }
 
@@ -44,7 +44,7 @@ function formatError(err) {
 }
 
 const files = (await fs.readdir(datasetsDir))
-  .filter((file) => file.endsWith('.json'))
+  .filter((file) => file.endsWith(".json"))
   .sort();
 
 const results = [];
@@ -54,8 +54,8 @@ for (const file of files) {
   const datasetPath = path.join(datasetsDir, file);
   const canonicalPath = path.join(canonicalDir, file);
 
-  const dataset = JSON.parse(await fs.readFile(datasetPath, 'utf8'));
-  const canonical = JSON.parse(await fs.readFile(canonicalPath, 'utf8'));
+  const dataset = JSON.parse(await fs.readFile(datasetPath, "utf8"));
+  const canonical = JSON.parse(await fs.readFile(canonicalPath, "utf8"));
 
   try {
     const packSet = buildPackSet(dataset.items || []);

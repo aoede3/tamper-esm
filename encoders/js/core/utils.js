@@ -1,9 +1,9 @@
 function isPlainObject(value) {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 export function clone(obj) {
-  if (!obj || typeof obj !== 'object') return obj;
+  if (!obj || typeof obj !== "object") return obj;
   if (Array.isArray(obj)) return obj.slice();
   return Object.assign({}, obj);
 }

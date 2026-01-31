@@ -1,196 +1,207 @@
-/* ---- begin test harness ---- */
-if (typeof module !== 'undefined' && module.exports) {
-   var atob = require("../test/node_modules/atob"),
-        _ =  require("../test/node_modules/underscore");
-}
-/* ---- end test harness ---- */
+const hasAtob = typeof globalThis.atob === "function";
+const hasBuffer = typeof globalThis.Buffer === "function";
 
-
-Tamper = {}
-Tamper.biterate = function(encoded){
-  var binary = atob(encoded),
-      length = binary.length,
-      i = 0,
-      output = [];
-  while(i < length){
-    var b = binary.charCodeAt(i),
-        j = 0;
-    while(j < 8 ){
-      output.push((b >> (7-j)) & 1);
-      j++;
-    }
-    i++;
+function decodeBase64(encoded) {
+  if (hasAtob) {
+    return globalThis.atob(encoded);
   }
-  return output;
+  if (hasBuffer) {
+    return globalThis.Buffer.from(encoded, "base64").toString("binary");
+  }
+  throw new Error("No base64 decoder available (expected atob or Buffer).");
 }
 
-Tamper.unpackExistence = function(element,default_attrs){
-  if(typeof(callback) === "undefined"){callback = false}
-  var bitArray = Tamper.biterate(element.pack),
-      length = bitArray.length,
-      output = [],
-      counter = 0,
-      consumeCC = function(array){
-        if(array.length < 2){throw "Improperly formatted bit array"}
-        var cc = array.splice(0,8);
-        cc = parseInt(cc.join(""),2)
-        return cc;
-      },
-      consumeNum = function(n,array){
-        var num = parseInt(array.splice(0,n).join(""),2);
-        return num;
-      },
-      consumeChunk = function(bytes,bits,array){
-        var num_bits = bytes*8 + bits,
-            chunk = array.splice(0,bytes*8 + bits),
-            i = 0;
-        while(i < num_bits){
-          if (!! chunk[i]){
-            default_attrs = _.clone(default_attrs);
-            output.push(_.extend(default_attrs,{guid: counter}));
-          }
-          counter++;
-          i++;
+function clone(obj) {
+  return Object.assign({}, obj);
+}
+
+function extend(target, source) {
+  return Object.assign(target, source);
+}
+
+export const Tamper = {
+  biterate(encoded) {
+    const binary = decodeBase64(encoded);
+    const length = binary.length;
+    const output = [];
+    let i = 0;
+
+    while (i < length) {
+      const b = binary.charCodeAt(i);
+      let j = 0;
+      while (j < 8) {
+        output.push((b >> (7 - j)) & 1);
+        j += 1;
+      }
+      i += 1;
+    }
+
+    return output;
+  },
+
+  unpackExistence(element, defaultAttrs = {}) {
+    const bitArray = Tamper.biterate(element.pack);
+    const output = [];
+    let counter = 0;
+
+    const consumeCC = (array) => {
+      if (array.length < 2) throw new Error("Improperly formatted bit array");
+      let cc = array.splice(0, 8);
+      cc = parseInt(cc.join(""), 2);
+      return cc;
+    };
+
+    const consumeNum = (n, array) => parseInt(array.splice(0, n).join(""), 2);
+
+    const consumeChunk = (bytes, bits, array) => {
+      const numBits = bytes * 8 + bits;
+      const chunk = array.splice(0, numBits);
+      let i = 0;
+
+      while (i < numBits) {
+        if (chunk[i]) {
+          const attrs = clone(defaultAttrs);
+          output.push(extend(attrs, { guid: counter }));
         }
-      },
-      processBitArray = function(array){
-        if(array.length === 0){
-          return output;
+        counter += 1;
+        i += 1;
+      }
+    };
+
+    const processBitArray = (array) => {
+      if (array.length === 0) {
+        return output;
+      }
+
+      const cc = consumeCC(array);
+      if (cc === 0) {
+        const bytesToConsume = consumeNum(32, array);
+        const bitsToConsume = consumeNum(8, array);
+        consumeChunk(bytesToConsume, bitsToConsume, array);
+        if (bitsToConsume > 0) {
+          array.splice(0, 8 - bitsToConsume);
         }
-        var cc = consumeCC(array);
-        if (cc == 0){
-          var bytes_to_consume = consumeNum(32,array),
-              bits_to_consume = consumeNum(8,array);
-          consumeChunk(bytes_to_consume,bits_to_consume,array);
-          if(bits_to_consume > 0){
-            array.splice(0,8 - bits_to_consume)
-          }
-          return processBitArray(array);
-        } else if (cc == 1){
-          var num_to_skip = consumeNum(32,array);
-          counter += num_to_skip;
-          return processBitArray(array);
-        } else if (cc == 2){
-          var num_to_run = consumeNum(32,array);
-          for (var i = 0;i < num_to_run;i++){
-            default_attrs = _.clone(default_attrs);
-            output.push(_.extend(default_attrs,{guid: counter}));
-            counter = counter + 1;
-          }
-          return processBitArray(array);
-        } else {
-          throw "Unrecognized control code: " + cc;
+        return processBitArray(array);
+      }
+      if (cc === 1) {
+        const numToSkip = consumeNum(32, array);
+        counter += numToSkip;
+        return processBitArray(array);
+      }
+      if (cc === 2) {
+        const numToRun = consumeNum(32, array);
+        for (let i = 0; i < numToRun; i += 1) {
+          const attrs = clone(defaultAttrs);
+          output.push(extend(attrs, { guid: counter }));
+          counter += 1;
         }
-      };
-  var ba = processBitArray(bitArray);
-  return ba;
-}
-
-Tamper.unpackIntegerEncoding = function(element, num_items) {
-  if(typeof(callback) === "undefined"){callback = false}
-  var consumeNum = function(array,n){
-        var num = parseInt(array.splice(0,n).join(""),2);
-        return num;
+        return processBitArray(array);
       }
-  var bitArray = Tamper.biterate(element.pack),
-      bit_window_width = element.bit_window_width,
-      item_window_width = element.item_window_width,
-      item_chunks = item_window_width/bit_window_width;
-      bytes_to_consume = consumeNum(bitArray,32),
-      bits_to_consume = consumeNum(bitArray,8);
-  var getPossibility = function(i){
-    if(i === 0){
-        return null
-    } else {
-        return element.possibilities[i - 1]
+
+      throw new Error(`Unrecognised control code: ${cc}`);
+    };
+
+    return processBitArray(bitArray);
+  },
+
+  unpackIntegerEncoding(element, numItems) {
+    const consumeNum = (array, n) => parseInt(array.splice(0, n).join(""), 2);
+    const bitArray = Tamper.biterate(element.pack);
+    const bitWindowWidth = element.bit_window_width;
+    const itemWindowWidth = element.item_window_width;
+    const itemChunks = itemWindowWidth / bitWindowWidth;
+
+    consumeNum(bitArray, 32);
+    consumeNum(bitArray, 8);
+
+    const getPossibility = (i) =>
+      i === 0 ? null : element.possibilities[i - 1];
+    const output = [];
+
+    for (let i = 0; i < numItems; i += 1) {
+      const bitWindow = bitArray.slice(
+        i * itemWindowWidth,
+        i * itemWindowWidth + itemWindowWidth,
+      );
+      for (let j = 0; j < itemChunks; j += 1) {
+        const choice = bitWindow.slice(
+          j * bitWindowWidth,
+          j * bitWindowWidth + bitWindowWidth,
+        );
+        const possibilityId = parseInt(choice.join(""), 2);
+        if (!output[i]) output[i] = [];
+        const result = getPossibility(possibilityId);
+        if (itemChunks === 1) {
+          output[i] = result;
+        } else if (result) {
+          output[i].push(result);
+        }
+      }
     }
-  }
-  var i = 0,output = [];
 
-  while(i < num_items) {
-    bit_window = bitArray.slice(i * item_window_width, (i * item_window_width) + item_window_width);
-    var j = 0;
-    while(j < item_chunks){
-      var choice = bit_window.slice(j*bit_window_width,(j * bit_window_width) + bit_window_width);
-      possibility_id = parseInt(choice.join(''), 2);
-      if (! output[i]) {output[i] = []}
-      var result = getPossibility(possibility_id);
-      if(item_chunks == 1){ 
-        output[i] = result
-      } else if(result) {
-        output[i].push(result);
+    return output;
+  },
+
+  unpackBitmapEncoding(element) {
+    const consumeNum = (array, n) => parseInt(array.splice(0, n).join(""), 2);
+    const bitArray = Tamper.biterate(element.pack);
+    const itemWindowWidth = element.item_window_width;
+    const chunks = bitArray.length / itemWindowWidth;
+
+    consumeNum(bitArray, 32);
+    consumeNum(bitArray, 8);
+
+    const output = [];
+
+    for (let i = 0; i < chunks; i += 1) {
+      const bitWindow = bitArray.slice(
+        i * itemWindowWidth,
+        i * itemWindowWidth + itemWindowWidth,
+      );
+      if (!output[i]) output[i] = [];
+      for (let j = 0; j < itemWindowWidth; j += 1) {
+        if (bitWindow[j] === 1) {
+          output[i].push(element.possibilities[j]);
+        }
       }
-      j++;
     }
-    i++;
-  }
 
-  return output;
-}
+    return output;
+  },
 
-Tamper.unpackBitmapEncoding = function(element){
-  var consumeNum = function(array,n){
-        var num = parseInt(array.splice(0,n).join(""),2);
-        return num;
+  unpackData(data, defaultAttrs = {}) {
+    if (data.existence) {
+      const exists = Tamper.unpackExistence(data.existence, defaultAttrs);
+
+      for (const attr of data.attributes) {
+        let attrArray;
+        switch (attr.encoding) {
+          case "bitmap":
+            attrArray = Tamper.unpackBitmapEncoding(attr);
+            break;
+          case "integer":
+            attrArray = Tamper.unpackIntegerEncoding(attr, exists.length);
+            break;
+          default:
+            continue;
+        }
+
+        exists.forEach((seed, i) => {
+          seed[attr.attr_name] = attrArray[i];
+        });
       }
-  var bitArray = Tamper.biterate(element.pack),
-      item_window_width = element.item_window_width,
-      chunks = bitArray.length / item_window_width,
-      bytes_to_consume = consumeNum(bitArray,32),
-      bits_to_consum = consumeNum(bitArray,8);
-  var i = 0,output = [];
 
-  while(i < chunks) {
-    bit_window = bitArray.slice(i * item_window_width, (i * item_window_width) + item_window_width);
-    if (! output[i]) {output[i] = []}
-    j = 0;
-    while (j < item_window_width){
-      if(bit_window[j] == "1"){
-        output[i].push(element.possibilities[j]);
-      }
-      j++;
+      return exists;
     }
-    i++;
-  }
-  return output;
 
+    return (data.collection || []).map((item) =>
+      extend(clone(defaultAttrs), item),
+    );
+  },
+};
+
+export function createTamper() {
+  return Tamper;
 }
 
-Tamper.unpackData = function(data,default_attrs){
-  if(typeof(default_attrs) === "undefined"){var default_attrs = {}}
-  if(data.existence){
-    var exists = Tamper.unpackExistence(data.existence,default_attrs),collection;
-    _(data.attributes).each(function(a){
-      switch(a.encoding) {
-        case 'bitmap':
-          var attr_array = Tamper.unpackBitmapEncoding(a);
-          break;
-        case 'integer':
-          var attr_array = Tamper.unpackIntegerEncoding(a, exists.length);
-          break;
-        default:  // attr does not contain a pack or is an unknown encoding
-          return;
-      }
-      _(exists).each(function(s,i){s[a.attr_name] = attr_array[i]});
-    })
-    return exists;
-  } else {
-    seeds = _(data.collection).map(function(i){var default_attrs = _.clone(default_attrs);return _(default_attrs).extend(i)});
-    return seeds;
-  }
-}
-
-if(typeof exports !== "undefined"){
-    exports.Tamper = function(){
-        return Tamper;
-    }
-} else {
-  if (typeof define === 'function' && define.amd) {
-    define(['underscore'], function(_) {
-      return Tamper;
-    });
-  }
-  else {
-    window.Tamper = Tamper;
-  }
-}
+export default createTamper;

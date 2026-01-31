@@ -1,17 +1,17 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-import createTamper from '../clients/js/src/tamper.js';
+import fs from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import assert from "node:assert/strict";
+import { createRequire } from "node:module";
+import createTamper from "../clients/js/src/tamper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, '..');
-const canonicalDir = path.join(rootDir, 'test', 'canonical-output');
+const rootDir = path.resolve(__dirname, "..");
+const canonicalDir = path.join(rootDir, "test", "canonical-output");
 const require = createRequire(import.meta.url);
 
-const legacy = require('../legacy/tamper.cjs');
+const legacy = require("../legacy/tamper.cjs");
 const legacyTamper = legacy.Tamper();
 const esmTamper = createTamper();
 
@@ -23,7 +23,7 @@ function formatError(err) {
 }
 
 const files = (await fs.readdir(canonicalDir))
-  .filter((file) => file.endsWith('.json'))
+  .filter((file) => file.endsWith(".json"))
   .sort();
 
 const results = [];
@@ -31,7 +31,7 @@ let failed = 0;
 
 for (const file of files) {
   const filePath = path.join(canonicalDir, file);
-  const raw = await fs.readFile(filePath, 'utf8');
+  const raw = await fs.readFile(filePath, "utf8");
   const data = JSON.parse(raw);
 
   try {
