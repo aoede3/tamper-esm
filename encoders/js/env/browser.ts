@@ -86,7 +86,7 @@ function toBase64(bytes: Uint8Array): string | undefined {
     const chunkSize = 0x8000;
     for (let i = 0; i < bytes.length; i += chunkSize) {
       const chunk = bytes.subarray(i, i + chunkSize);
-      binary += String.fromCharCode(...chunk);
+      binary += String.fromCharCode.apply(null, chunk as unknown as number[]);
     }
     return btoa(binary);
   }
