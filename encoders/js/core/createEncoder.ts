@@ -274,6 +274,7 @@ export default function createEncoder(env: EncoderEnv) {
     runCounter: number;
     bitpusher: Bitpusher;
     outputBuffers: BufferLike[];
+    controlCodes: Array<{ type: "keep" | "skip" | "run"; offset: number; buffer?: BufferLike }>;
     output?: unknown;
 
     constructor() {
@@ -283,6 +284,7 @@ export default function createEncoder(env: EncoderEnv) {
       this.runCounter = 0;
       this.bitpusher = new Bitpusher();
       this.outputBuffers = [];
+      this.controlCodes = [];
     }
 
     initializePack(_maxGuid: number, _numItems: number): void {}
@@ -304,7 +306,7 @@ export default function createEncoder(env: EncoderEnv) {
       } else if (guidDiff > 40) {
         this.dumpKeep(this.bitpusher, this.runCounter);
 
-        this.outputBuffers.push(this.controlCode("skip", guidDiff - 1));
+        this.controlCodes.push({ type: "skip", offset: guidDiff - 1 });
 
         this.bitpusher.clear();
         this.bitpusher.push(1);
@@ -326,7 +328,46 @@ export default function createEncoder(env: EncoderEnv) {
 
     finalizePack(): void {
       this.dumpKeep(this.bitpusher, this.runCounter);
-      this.buffer = env.concatBuffers(this.outputBuffers);
+
+      // Calculate total buffer size needed
+      let totalSize = 0;
+      for (const cc of this.controlCodes) {
+        if (cc.type === "keep") {
+          totalSize += 6; // keep control code
+          totalSize += cc.buffer?.length || 0; // plus data buffer
+        } else {
+          totalSize += 5; // skip or run control code
+        }
+      }
+
+      // Allocate single buffer and write all control codes
+      this.buffer = env.createBuffer(totalSize);
+      let offset = 0;
+
+      for (const cc of this.controlCodes) {
+        if (cc.type === "keep") {
+          const bytesToKeep = Math.floor(cc.offset / 8);
+          const remainingBits = cc.offset % 8;
+          env.writeUInt8(this.buffer, ExistencePack.KEEP, offset);
+          env.writeUInt32BE(this.buffer, bytesToKeep, offset + 1);
+          env.writeUInt8(this.buffer, remainingBits, offset + 5);
+          offset += 6;
+
+          if (cc.buffer) {
+            for (let i = 0; i < cc.buffer.length; i++) {
+              this.buffer[offset++] = cc.buffer[i];
+            }
+          }
+        } else if (cc.type === "skip") {
+          env.writeUInt8(this.buffer, ExistencePack.SKIP, offset);
+          env.writeUInt32BE(this.buffer, cc.offset, offset + 1);
+          offset += 5;
+        } else if (cc.type === "run") {
+          env.writeUInt8(this.buffer, ExistencePack.RUN, offset);
+          env.writeUInt32BE(this.buffer, cc.offset, offset + 1);
+          offset += 5;
+        }
+      }
     }
 
     toPlainObject(): Record<string, unknown> {
@@ -349,10 +390,13 @@ export default function createEncoder(env: EncoderEnv) {
       if (runLen >= 40) {
         const length = bitpusher.length - runLen;
         this.dumpKeep(bitpusher.slice(0, length), 0);
-        this.outputBuffers.push(this.controlCode("run", runLen));
+        this.controlCodes.push({ type: "run", offset: runLen });
       } else if (bitpusher.length > 0) {
-        this.outputBuffers.push(this.controlCode("keep", bitpusher.length));
-        this.outputBuffers.push(bitpusher.getBuffer());
+        this.controlCodes.push({
+          type: "keep",
+          offset: bitpusher.length,
+          buffer: bitpusher.getBuffer()
+        });
       }
     }
 
