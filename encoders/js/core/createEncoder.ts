@@ -71,7 +71,7 @@ export default function createEncoder(env: EncoderEnv) {
     slice(begin: number, end: number) {
       const bitpusher = new Bitpusher();
       bitpusher.bitset = this.bitset.slice(begin, end);
-      bitpusher.length = end;
+      bitpusher.length = end - begin;
       return bitpusher;
     }
 
@@ -89,6 +89,7 @@ export default function createEncoder(env: EncoderEnv) {
     attrName: string;
     maxChoices: number;
     meta: Record<string, unknown>;
+    possIndex: Map<string, number>;
     encoding: string | null;
     bitWindowWidth: number | null;
     itemWindowWidth: number | null;
@@ -107,6 +108,10 @@ export default function createEncoder(env: EncoderEnv) {
         throw new Error(`Possibilities are empty for ${attrName}`);
 
       this.possibilities = possibilities.map((a) => `${a}`);
+      this.possIndex = new Map();
+      this.possibilities.forEach((value, index) => {
+        this.possIndex.set(value, index);
+      });
       this.attrName = attrName;
       this.maxChoices = maxChoices;
       this.meta = {};
@@ -170,8 +175,8 @@ export default function createEncoder(env: EncoderEnv) {
           this.itemWindowWidth * idx + this.bitWindowWidth * i;
         const value = choices[i];
 
-        const possibilityIndex = this.possibilities.indexOf(`${value}`);
-        if (possibilityIndex === -1) continue;
+        const possibilityIndex = this.possIndex.get(`${value}`);
+        if (possibilityIndex === undefined) continue;
 
         const possibilityId = possibilityIndex + 1;
         const bitOffset = this.baseOffset + choiceOffset;
@@ -223,8 +228,8 @@ export default function createEncoder(env: EncoderEnv) {
       const itemOffset = idx * this.itemWindowWidth;
 
       (choices as unknown[]).forEach((choice) => {
-        const choiceOffset = this.possibilities.indexOf(`${choice}`);
-        if (choiceOffset !== -1) {
+        const choiceOffset = this.possIndex.get(`${choice}`);
+        if (choiceOffset !== undefined) {
           setBit(
             this.buffer,
             this.baseOffset + itemOffset + choiceOffset,
@@ -422,15 +427,16 @@ export default function createEncoder(env: EncoderEnv) {
     }
 
     addBufferedAttribute(opts: BufferedAttrOpts) {
-      if (opts.attr_name === undefined) {
+      const localOpts = clone(opts) as BufferedAttrOpts;
+      const attrName = (localOpts.attrName ?? localOpts.attr_name) as string;
+      if (attrName === undefined) {
         throw new Error(
-          "attr_name is required when adding a buffered attribute!",
+          "attrName or attr_name is required when adding a buffered attribute!",
         );
       }
 
-      const localOpts = clone(opts) as BufferedAttrOpts;
-      const attrName = localOpts.attrName as string;
       delete localOpts.attrName;
+      delete localOpts.attr_name;
 
       this.bufferedAttrs[attrName] = merge({ attrName }, localOpts);
     }
@@ -446,11 +452,16 @@ export default function createEncoder(env: EncoderEnv) {
     pack(data: DataItem[], opts: Record<string, unknown> = {}) {
       const localOpts = (clone(opts) || {}) as Record<string, unknown>;
 
-      localOpts.guidAttr || (localOpts.guidAttr = PackSet.DEFAULT_GUID_ATTR);
+      if (localOpts.guidAttr == null) {
+        localOpts.guidAttr = PackSet.DEFAULT_GUID_ATTR;
+      }
       const guidAttr = localOpts.guidAttr as string;
-      localOpts.maxGuid ||
-        (localOpts.maxGuid = (last(data) as DataItem)[guidAttr]);
-      localOpts.numItems || (localOpts.numItems = data.length);
+      if (localOpts.maxGuid == null) {
+        localOpts.maxGuid = (last(data) as DataItem)[guidAttr];
+      }
+      if (localOpts.numItems == null) {
+        localOpts.numItems = data.length;
+      }
 
       this.buildPack(localOpts, data);
     }
