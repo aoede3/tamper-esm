@@ -1,26 +1,47 @@
-const hasAtob = typeof globalThis.atob === "function";
-const hasBuffer = typeof globalThis.Buffer === "function";
+type JsonObject = Record<string, unknown>;
 
-function decodeBase64(encoded) {
+const hasAtob = typeof globalThis.atob === "function";
+const hasBuffer = typeof (globalThis as { Buffer?: typeof Buffer }).Buffer === "function";
+
+function decodeBase64(encoded: string): string {
   if (hasAtob) {
     return globalThis.atob(encoded);
   }
   if (hasBuffer) {
-    return globalThis.Buffer.from(encoded, "base64").toString("binary");
+    return (globalThis as { Buffer: typeof Buffer }).Buffer.from(encoded, "base64").toString("binary");
   }
   throw new Error("No base64 decoder available (expected atob or Buffer).");
 }
 
-function clone(obj) {
+function clone(obj: JsonObject): JsonObject {
   return Object.assign({}, obj);
 }
 
-function extend(target, source) {
+function extend(target: JsonObject, source: JsonObject): JsonObject {
   return Object.assign(target, source);
 }
 
+type ExistencePack = {
+  pack: string;
+};
+
+type AttributePack = {
+  encoding: string;
+  attr_name: string;
+  possibilities: string[];
+  pack: string;
+  bit_window_width: number;
+  item_window_width: number;
+};
+
+type PackData = {
+  existence?: ExistencePack;
+  attributes?: AttributePack[];
+  collection?: JsonObject[];
+};
+
 export const Tamper = {
-  biterate(encoded) {
+  biterate(encoded: string): number[] {
     const binary = decodeBase64(encoded);
     const length = binary.length;
     const output = [];
@@ -39,21 +60,21 @@ export const Tamper = {
     return output;
   },
 
-  unpackExistence(element, defaultAttrs = {}) {
+  unpackExistence(element: ExistencePack, defaultAttrs: JsonObject = {}): JsonObject[] {
     const bitArray = Tamper.biterate(element.pack);
     const output = [];
     let counter = 0;
 
-    const consumeCC = (array) => {
+    const consumeCC = (array: number[]): number => {
       if (array.length < 2) throw new Error("Improperly formatted bit array");
-      let cc = array.splice(0, 8);
-      cc = parseInt(cc.join(""), 2);
-      return cc;
+      const ccBits = array.splice(0, 8);
+      return parseInt(ccBits.join(""), 2);
     };
 
-    const consumeNum = (n, array) => parseInt(array.splice(0, n).join(""), 2);
+    const consumeNum = (n: number, array: number[]) =>
+      parseInt(array.splice(0, n).join(""), 2);
 
-    const consumeChunk = (bytes, bits, array) => {
+    const consumeChunk = (bytes: number, bits: number, array: number[]) => {
       const numBits = bytes * 8 + bits;
       const chunk = array.splice(0, numBits);
       let i = 0;
@@ -68,7 +89,7 @@ export const Tamper = {
       }
     };
 
-    const processBitArray = (array) => {
+    const processBitArray = (array: number[]) => {
       if (array.length === 0) {
         return output;
       }
@@ -104,8 +125,9 @@ export const Tamper = {
     return processBitArray(bitArray);
   },
 
-  unpackIntegerEncoding(element, numItems) {
-    const consumeNum = (array, n) => parseInt(array.splice(0, n).join(""), 2);
+  unpackIntegerEncoding(element: AttributePack, numItems: number) {
+    const consumeNum = (array: number[], n: number) =>
+      parseInt(array.splice(0, n).join(""), 2);
     const bitArray = Tamper.biterate(element.pack);
     const bitWindowWidth = element.bit_window_width;
     const itemWindowWidth = element.item_window_width;
@@ -114,9 +136,9 @@ export const Tamper = {
     consumeNum(bitArray, 32);
     consumeNum(bitArray, 8);
 
-    const getPossibility = (i) =>
+    const getPossibility = (i: number): string | null =>
       i === 0 ? null : element.possibilities[i - 1];
-    const output = [];
+    const output: Array<string | string[] | null> = [];
 
     for (let i = 0; i < numItems; i += 1) {
       const bitWindow = bitArray.slice(
@@ -134,7 +156,7 @@ export const Tamper = {
         if (itemChunks === 1) {
           output[i] = result;
         } else if (result) {
-          output[i].push(result);
+          (output[i] as string[]).push(result);
         }
       }
     }
@@ -142,8 +164,9 @@ export const Tamper = {
     return output;
   },
 
-  unpackBitmapEncoding(element) {
-    const consumeNum = (array, n) => parseInt(array.splice(0, n).join(""), 2);
+  unpackBitmapEncoding(element: AttributePack): string[][] {
+    const consumeNum = (array: number[], n: number) =>
+      parseInt(array.splice(0, n).join(""), 2);
     const bitArray = Tamper.biterate(element.pack);
     const itemWindowWidth = element.item_window_width;
     const chunks = bitArray.length / itemWindowWidth;
@@ -151,7 +174,7 @@ export const Tamper = {
     consumeNum(bitArray, 32);
     consumeNum(bitArray, 8);
 
-    const output = [];
+    const output: string[][] = [];
 
     for (let i = 0; i < chunks; i += 1) {
       const bitWindow = bitArray.slice(
@@ -169,11 +192,11 @@ export const Tamper = {
     return output;
   },
 
-  unpackData(data, defaultAttrs = {}) {
+  unpackData(data: PackData, defaultAttrs: JsonObject = {}) {
     if (data.existence) {
       const exists = Tamper.unpackExistence(data.existence, defaultAttrs);
 
-      for (const attr of data.attributes) {
+      for (const attr of data.attributes || []) {
         let attrArray;
         switch (attr.encoding) {
           case "bitmap":
@@ -187,7 +210,7 @@ export const Tamper = {
         }
 
         exists.forEach((seed, i) => {
-          seed[attr.attr_name] = attrArray[i];
+          (seed as JsonObject)[attr.attr_name] = attrArray[i] as unknown;
         });
       }
 

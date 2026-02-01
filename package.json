@@ -1,8 +1,14 @@
 {
   "type": "module",
   "scripts": {
-    "test:decoders": "node ./scripts/compare-decoders.mjs",
-    "test:encoders": "node ./scripts/compare-encoders.mjs",
-    "test": "node ./scripts/compare-decoders.mjs && node ./scripts/compare-encoders.mjs"
+    "test:decoders": "tsx ./scripts/compare-decoders.ts",
+    "test:encoders": "tsx ./scripts/compare-encoders.ts",
+    "test": "tsx ./scripts/compare-decoders.ts && tsx ./scripts/compare-encoders.ts",
+    "inspect": "tsx ./scripts/inspect-pack.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "tsx": "^4.21.0",
+    "typescript": "^5.5.4"
   }
 }

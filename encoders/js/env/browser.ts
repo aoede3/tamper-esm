@@ -1,10 +1,13 @@
 class BitsyLite {
-  constructor(size) {
+  length: number;
+  bytes: Uint8Array;
+
+  constructor(size: number) {
     this.length = size;
     this.bytes = new Uint8Array(Math.ceil(size / 8));
   }
 
-  set(index, value) {
+  set(index: number, value: boolean) {
     const byteIndex = (index / 8) | 0;
     const bitOffset = 7 - (index % 8);
     const mask = 1 << bitOffset;
@@ -15,7 +18,7 @@ class BitsyLite {
     }
   }
 
-  setSize(size) {
+  setSize(size: number) {
     if (size <= this.length) return;
     const next = new Uint8Array(Math.ceil(size / 8));
     next.set(this.bytes);
@@ -23,7 +26,7 @@ class BitsyLite {
     this.length = size;
   }
 
-  slice(begin, end) {
+  slice(begin: number, end: number) {
     const length = Math.max(0, end - begin);
     const result = new BitsyLite(length);
     for (let i = 0; i < length; i += 1) {
@@ -37,12 +40,12 @@ class BitsyLite {
     return result;
   }
 
-  getBuffer() {
+  getBuffer(): Uint8Array {
     return this.bytes;
   }
 }
 
-function toBase64(bytes) {
+function toBase64(bytes: Uint8Array): string | undefined {
   if (!bytes || !bytes.length) return undefined;
 
   if (typeof Buffer !== "undefined") {
@@ -63,10 +66,10 @@ function toBase64(bytes) {
 }
 
 export default {
-  createBuffer(length) {
+  createBuffer(length: number): Uint8Array {
     return new Uint8Array(length);
   },
-  writeUInt32BE(buffer, value, offset) {
+  writeUInt32BE(buffer: Uint8Array, value: number, offset: number): void {
     const view = new DataView(
       buffer.buffer,
       buffer.byteOffset,
@@ -74,10 +77,10 @@ export default {
     );
     view.setUint32(offset, value, false);
   },
-  writeUInt8(buffer, value, offset) {
+  writeUInt8(buffer: Uint8Array, value: number, offset: number): void {
     buffer[offset] = value & 0xff;
   },
-  concatBuffers(chunks) {
+  concatBuffers(chunks: Uint8Array[]): Uint8Array {
     let total = 0;
     chunks.forEach((chunk) => {
       total += chunk.length;
@@ -93,7 +96,7 @@ export default {
     return out;
   },
   toBase64,
-  createBitset(size) {
+  createBitset(size: number) {
     return new BitsyLite(size);
   },
 };

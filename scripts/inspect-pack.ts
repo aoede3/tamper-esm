@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import createTamper from "../clients/js/src/tamper.js";
+import createTamper from "../clients/js/src/tamper.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -9,7 +9,7 @@ const rootDir = path.resolve(__dirname, "..");
 
 const relPath = process.argv[2];
 if (!relPath) {
-  console.error("Usage: node scripts/inspect-pack.mjs <path-to-pack.json>");
+  console.error("Usage: tsx scripts/inspect-pack.ts <path-to-pack.json>");
   process.exit(1);
 }
 

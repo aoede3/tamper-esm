@@ -88,7 +88,14 @@ These strategies are chosen automatically by the encoder based on observed data 
 ## Requirements
 
 - Node.js (ESM-capable; tested with current LTS)
+- npm (for installing dev tooling)
 - Encoder runtime uses a local `vendor/bitsy` shim (no network installs)
+
+Install dev dependencies for TSX-driven scripts:
+
+```bash
+npm install
+```
 
 ---
 
@@ -103,7 +110,7 @@ Exports:
 - default export - alias of `createTamper`
 
 ```js
-import createTamper from "./clients/js/src/tamper.js";
+import createTamper from "./clients/js/src/tamper.ts";
 import fs from "node:fs/promises";
 
 const tamper = createTamper();
@@ -117,7 +124,7 @@ const items = tamper.unpackData(pack);
 
 Entry points:
 
-- Node / standard ESM: `encoders/js/index.js`
+- Node / standard ESM: `encoders/js/index.ts`
 - Browser / edge: compose core + environment adapter
 
 Exports:
@@ -126,7 +133,7 @@ Exports:
 - `Pack`, `IntegerPack`, `BitmapPack`, `ExistencePack`
 
 ```js
-import { createPackSet } from "./encoders/js/index.js";
+import { createPackSet } from "./encoders/js/index.ts";
 
 const tamp = createPackSet();
 // configure attributes + pack data...
@@ -136,8 +143,8 @@ const json = tamp.toJSON();
 Browser / edge example:
 
 ```js
-import createEncoder from "./encoders/js/core/createEncoder.js";
-import browserEnv from "./encoders/js/env/browser.js";
+import createEncoder from "./encoders/js/core/createEncoder.ts";
+import browserEnv from "./encoders/js/env/browser.ts";
 
 const { createPackSet } = createEncoder(browserEnv);
 
@@ -153,13 +160,13 @@ const json = tamp.toJSON();
 Decoder parity compares decoded output from the legacy and ESM implementations:
 
 ```bash
-node scripts/compare-decoders.mjs
+tsx scripts/compare-decoders.ts
 ```
 
 Encoder parity builds packs from test datasets and compares full JSON output against canonical fixtures:
 
 ```bash
-node scripts/compare-encoders.mjs
+tsx scripts/compare-encoders.ts
 ```
 
 The ESM implementation is considered correct only when **all canonical fixtures match byte-for-byte**.
