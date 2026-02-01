@@ -397,7 +397,15 @@ export default function createEncoder(env: EncoderEnv) {
     dumpKeep(bitpusher: Bitpusher, runLen: number) {
       if (runLen >= 40) {
         const length = bitpusher.length - runLen;
-        this.dumpKeep(bitpusher.slice(0, length), 0);
+        if (length > 0) {
+          // Directly slice the bitset for the buffer, avoiding intermediate Bitpusher
+          const keepBuffer = bitpusher.bitset.slice(0, length).getBuffer();
+          this.controlCodes.push({
+            type: "keep",
+            offset: length,
+            buffer: keepBuffer
+          });
+        }
         this.controlCodes.push({ type: "run", offset: runLen });
       } else if (bitpusher.length > 0) {
         this.controlCodes.push({
