@@ -535,8 +535,8 @@ export default function createEncoder(env: EncoderEnv) {
 
       existencePack.initializePack(maxGuid, numItems);
       existencePack.maxGuid = 0;
-      packs.forEach((pack) => pack.initializePack(maxGuid, numItems));
       packs.forEach((pack) => {
+        pack.initializePack(maxGuid, numItems);
         pack.maxGuid = 0;
       });
 
