@@ -94,7 +94,6 @@ export default function createEncoder(env: EncoderEnv) {
     bitWindowWidth: number | null;
     itemWindowWidth: number | null;
     buffer: BufferLike | null;
-    bitCounter: number;
     maxGuid: number;
     baseOffset: number;
     numItems: number;
@@ -120,7 +119,6 @@ export default function createEncoder(env: EncoderEnv) {
       this.bitWindowWidth = null;
       this.itemWindowWidth = null;
       this.buffer = null;
-      this.bitCounter = 0;
       this.maxGuid = 0;
       this.baseOffset = 0;
       this.numItems = 0;
@@ -184,7 +182,6 @@ export default function createEncoder(env: EncoderEnv) {
         for (let bitPos = 0; bitPos < this.bitWindowWidth; bitPos += 1) {
           const bitValue =
             (possibilityId >> (this.bitWindowWidth - 1 - bitPos)) & 1;
-          this.bitCounter += 1;
           setBit(this.buffer, bitOffset + bitPos, bitValue === 1);
         }
       }
