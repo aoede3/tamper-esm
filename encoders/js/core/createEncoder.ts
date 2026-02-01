@@ -31,6 +31,10 @@ function log2(x: number): number {
   return result;
 }
 
+function toStringKey(value: unknown): string {
+  return typeof value === "string" ? value : String(value);
+}
+
 export default function createEncoder(env: EncoderEnv) {
   type DataItem = Record<string, unknown>;
   type AttributeOpts = {
@@ -180,7 +184,7 @@ export default function createEncoder(env: EncoderEnv) {
           this.itemWindowWidth * idx + this.bitWindowWidth * i;
         const value = choices[i];
 
-        const possibilityIndex = this.possIndex.get(`${value}`);
+        const possibilityIndex = this.possIndex.get(toStringKey(value));
         if (possibilityIndex === undefined) continue;
 
         const possibilityId = possibilityIndex + 1;
@@ -232,7 +236,7 @@ export default function createEncoder(env: EncoderEnv) {
       const itemOffset = idx * this.itemWindowWidth;
 
       (choices as unknown[]).forEach((choice) => {
-        const choiceOffset = this.possIndex.get(`${choice}`);
+        const choiceOffset = this.possIndex.get(toStringKey(choice));
         if (choiceOffset !== undefined) {
           setBit(
             this.buffer,
