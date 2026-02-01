@@ -136,24 +136,31 @@ export const Tamper = {
 
     const bytesToConsume = reader.readNumber(32);
     const bitsToConsume = reader.readNumber(8);
-    const totalBits = bytesToConsume * 8 + bitsToConsume;
-    const bitArray = reader.readBits(totalBits);
+    let remainingBits = bytesToConsume * 8 + bitsToConsume;
+
+    const readBit = (): number => {
+      if (remainingBits <= 0) {
+        throw new Error("Improperly formatted bit array");
+      }
+      remainingBits -= 1;
+      return reader.readBit();
+    };
+
+    const readNumber = (count: number): number => {
+      let num = 0;
+      for (let i = 0; i < count; i += 1) {
+        num = (num << 1) | readBit();
+      }
+      return num;
+    };
 
     const getPossibility = (i: number): string | null =>
       i === 0 ? null : element.possibilities[i - 1];
     const output: Array<string | string[] | null> = [];
 
     for (let i = 0; i < numItems; i += 1) {
-      const bitWindow = bitArray.slice(
-        i * itemWindowWidth,
-        i * itemWindowWidth + itemWindowWidth,
-      );
       for (let j = 0; j < itemChunks; j += 1) {
-        const choice = bitWindow.slice(
-          j * bitWindowWidth,
-          j * bitWindowWidth + bitWindowWidth,
-        );
-        const possibilityId = parseInt(choice.join(""), 2);
+        const possibilityId = readNumber(bitWindowWidth);
         if (!output[i]) output[i] = [];
         const result = getPossibility(possibilityId);
         if (itemChunks === 1) {
@@ -172,20 +179,23 @@ export const Tamper = {
     const itemWindowWidth = element.item_window_width;
     const bytesToConsume = reader.readNumber(32);
     const bitsToConsume = reader.readNumber(8);
-    const totalBits = bytesToConsume * 8 + bitsToConsume;
-    const bitArray = reader.readBits(totalBits);
-    const chunks = bitArray.length / itemWindowWidth;
+    let remainingBits = bytesToConsume * 8 + bitsToConsume;
+    const chunks = remainingBits / itemWindowWidth;
+
+    const readBit = (): number => {
+      if (remainingBits <= 0) {
+        throw new Error("Improperly formatted bit array");
+      }
+      remainingBits -= 1;
+      return reader.readBit();
+    };
 
     const output: string[][] = [];
 
     for (let i = 0; i < chunks; i += 1) {
-      const bitWindow = bitArray.slice(
-        i * itemWindowWidth,
-        i * itemWindowWidth + itemWindowWidth,
-      );
       if (!output[i]) output[i] = [];
       for (let j = 0; j < itemWindowWidth; j += 1) {
-        if (bitWindow[j] === 1) {
+        if (readBit() === 1) {
           output[i].push(element.possibilities[j]);
         }
       }
