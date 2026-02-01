@@ -1,4 +1,3 @@
-import setBit from "./setBit.ts";
 import { clone, merge, values, last, sortBy } from "./utils.ts";
 
 type BufferLike = Uint8Array;
@@ -193,7 +192,14 @@ export default function createEncoder(env: EncoderEnv) {
         for (let bitPos = 0; bitPos < this.bitWindowWidth; bitPos += 1) {
           const bitValue =
             (possibilityId >> (this.bitWindowWidth - 1 - bitPos)) & 1;
-          setBit(this.buffer, bitOffset + bitPos, bitValue === 1);
+          const offset = bitOffset + bitPos;
+          const octetIndex = (offset / 8) | 0;
+          const mask = 1 << (7 - (offset % 8));
+          if (bitValue) {
+            this.buffer[octetIndex] |= mask;
+          } else {
+            this.buffer[octetIndex] &= ~mask;
+          }
         }
       }
     }
@@ -238,11 +244,10 @@ export default function createEncoder(env: EncoderEnv) {
       (choices as unknown[]).forEach((choice) => {
         const choiceOffset = this.possIndex.get(toStringKey(choice));
         if (choiceOffset !== undefined) {
-          setBit(
-            this.buffer,
-            this.baseOffset + itemOffset + choiceOffset,
-            true,
-          );
+          const offset = this.baseOffset + itemOffset + choiceOffset;
+          const octetIndex = (offset / 8) | 0;
+          const mask = 1 << (7 - (offset % 8));
+          this.buffer[octetIndex] |= mask;
         }
       });
     }
