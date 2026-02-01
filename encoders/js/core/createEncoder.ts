@@ -517,15 +517,13 @@ export default function createEncoder(env: EncoderEnv) {
     }
 
     toPlainObject(opts: Record<string, unknown> = {}) {
+      const attributes = values(this.attrPacks).map((pack) => pack.toPlainObject());
+      const buffered = values(this.bufferedAttrs) as Record<string, unknown>[];
+
       const output = {
         existence: this.existencePack.toPlainObject(),
-        attributes: values(this.attrPacks).map((pack) => pack.toPlainObject()),
+        attributes: attributes.concat(buffered),
       };
-
-      merge(
-        output.attributes,
-        values(this.bufferedAttrs) as Record<string, unknown>[],
-      );
 
       return merge(output, this.meta);
     }
