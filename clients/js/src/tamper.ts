@@ -164,12 +164,17 @@ export const Tamper = {
 
     const getPossibility = (i: number): string | null =>
       i === 0 ? null : element.possibilities[i - 1];
-    const output: Array<string | string[] | null> = [];
+    const output: Array<string | string[] | null> = new Array(numItems);
+
+    if (itemChunks > 1) {
+      for (let i = 0; i < numItems; i += 1) {
+        output[i] = [];
+      }
+    }
 
     for (let i = 0; i < numItems; i += 1) {
       for (let j = 0; j < itemChunks; j += 1) {
         const possibilityId = readNumber(bitWindowWidth);
-        if (!output[i]) output[i] = [];
         const result = getPossibility(possibilityId);
         if (itemChunks === 1) {
           output[i] = result;
@@ -198,10 +203,12 @@ export const Tamper = {
       return reader.readBit();
     };
 
-    const output: string[][] = [];
+    const output: string[][] = new Array(chunks);
+    for (let i = 0; i < chunks; i += 1) {
+      output[i] = [];
+    }
 
     for (let i = 0; i < chunks; i += 1) {
-      if (!output[i]) output[i] = [];
       for (let j = 0; j < itemWindowWidth; j += 1) {
         if (readBit() === 1) {
           output[i].push(element.possibilities[j]);
