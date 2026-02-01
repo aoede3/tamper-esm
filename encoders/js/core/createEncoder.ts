@@ -51,6 +51,7 @@ export default function createEncoder(env: EncoderEnv) {
   class Bitpusher {
     bitset: Bitset;
     length: number;
+    capacity: number;
 
     constructor() {
       this.clear();
@@ -63,8 +64,9 @@ export default function createEncoder(env: EncoderEnv) {
       }
 
       this.length += 1;
-      if (this.bitset.length <= this.length) {
-        this.bitset.setSize(this.bitset.length * 2);
+      if (this.length >= this.capacity) {
+        this.capacity = this.capacity * 2;
+        this.bitset.setSize(this.capacity);
       }
     }
 
@@ -76,6 +78,7 @@ export default function createEncoder(env: EncoderEnv) {
     clear(): void {
       this.bitset = env.createBitset(8);
       this.length = 0;
+      this.capacity = 8;
     }
 
     slice(begin: number, end: number) {
