@@ -20,8 +20,15 @@ type EncoderEnv = {
   createBitset(size: number): Bitset;
 };
 
-function log2(x) {
-  return Math.log(x) / Math.LN2;
+const log2Cache = new Map<number, number>();
+
+function log2(x: number): number {
+  if (log2Cache.has(x)) {
+    return log2Cache.get(x)!;
+  }
+  const result = Math.log(x) / Math.LN2;
+  log2Cache.set(x, result);
+  return result;
 }
 
 export default function createEncoder(env: EncoderEnv) {
