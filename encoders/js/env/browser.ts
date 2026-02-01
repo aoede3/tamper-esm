@@ -29,14 +29,43 @@ class BitsyLite {
   slice(begin: number, end: number) {
     const length = Math.max(0, end - begin);
     const result = new BitsyLite(length);
-    for (let i = 0; i < length; i += 1) {
-      const sourceIndex = begin + i;
-      const byteIndex = (sourceIndex / 8) | 0;
-      const bitOffset = 7 - (sourceIndex % 8);
-      const mask = 1 << bitOffset;
-      const value = (this.bytes[byteIndex] & mask) !== 0;
-      if (value) result.set(i, true);
+
+    // Fast path: byte-aligned slice
+    if (begin % 8 === 0 && length % 8 === 0) {
+      const beginByte = begin / 8;
+      const numBytes = length / 8;
+      result.bytes.set(this.bytes.subarray(beginByte, beginByte + numBytes));
+      return result;
     }
+
+    // Optimized path: copy aligned bytes with bit shifting
+    const beginByte = (begin / 8) | 0;
+    const beginBitOffset = begin % 8;
+    const endByte = ((end - 1) / 8) | 0;
+    const numSourceBytes = endByte - beginByte + 1;
+
+    if (beginBitOffset === 0) {
+      // Begin is byte-aligned, just copy bytes
+      const bytesToCopy = Math.ceil(length / 8);
+      result.bytes.set(this.bytes.subarray(beginByte, beginByte + bytesToCopy));
+    } else {
+      // Need to shift bits
+      const shift = beginBitOffset;
+      for (let i = 0; i < numSourceBytes - 1; i += 1) {
+        const currentByte = this.bytes[beginByte + i];
+        const nextByte = this.bytes[beginByte + i + 1];
+        result.bytes[i] = ((currentByte << shift) | (nextByte >> (8 - shift))) & 0xff;
+      }
+      // Handle last byte
+      if (numSourceBytes > 0) {
+        const lastSourceByte = this.bytes[beginByte + numSourceBytes - 1];
+        const resultByteIndex = numSourceBytes - 1;
+        if (resultByteIndex < result.bytes.length) {
+          result.bytes[resultByteIndex] = (lastSourceByte << shift) & 0xff;
+        }
+      }
+    }
+
     return result;
   }
 
