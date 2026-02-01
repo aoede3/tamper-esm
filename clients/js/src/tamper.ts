@@ -55,8 +55,16 @@ export const Tamper = {
       return bits;
     };
 
-    const readNumber = (count: number): number =>
-      parseInt(readBits(count).join(""), 2);
+    const readNumber = (count: number): number => {
+      if (!hasBits(count)) {
+        throw new Error("Improperly formatted bit array");
+      }
+      let num = 0;
+      for (let i = 0; i < count; i += 1) {
+        num = (num << 1) | readBit();
+      }
+      return num;
+    };
 
     const readChunk = (count: number): number[] => readBits(count);
 
