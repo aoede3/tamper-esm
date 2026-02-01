@@ -1,4 +1,4 @@
-type JsonObject = Record<string, unknown>;
+import type { AttributePack, ExistencePack, JsonObject, PackData } from "./types.ts";
 
 const hasAtob = typeof globalThis.atob === "function";
 const hasBuffer = typeof (globalThis as { Buffer?: typeof Buffer }).Buffer === "function";
@@ -21,71 +21,66 @@ function extend(target: JsonObject, source: JsonObject): JsonObject {
   return Object.assign(target, source);
 }
 
-type ExistencePack = {
-  pack: string;
-};
-
-type AttributePack = {
-  encoding: string;
-  attr_name: string;
-  possibilities: string[];
-  pack: string;
-  bit_window_width: number;
-  item_window_width: number;
-};
-
-type PackData = {
-  existence?: ExistencePack;
-  attributes?: AttributePack[];
-  collection?: JsonObject[];
-};
-
 export const Tamper = {
-  biterate(encoded: string): number[] {
+  biterate(encoded: string) {
     const binary = decodeBase64(encoded);
-    const length = binary.length;
-    const output = [];
-    let i = 0;
+    let byteIndex = 0;
+    let bitIndex = 0;
 
-    while (i < length) {
-      const b = binary.charCodeAt(i);
-      let j = 0;
-      while (j < 8) {
-        output.push((b >> (7 - j)) & 1);
-        j += 1;
+    const bitsRemaining = () => binary.length * 8 - (byteIndex * 8 + bitIndex);
+    const hasBits = (count: number): boolean => bitsRemaining() >= count;
+
+    const readBit = (): number => {
+      if (!hasBits(1)) {
+        throw new Error("Improperly formatted bit array");
       }
-      i += 1;
-    }
+      const byte = binary.charCodeAt(byteIndex);
+      const bit = (byte >> (7 - bitIndex)) & 1;
+      bitIndex += 1;
+      if (bitIndex === 8) {
+        bitIndex = 0;
+        byteIndex += 1;
+      }
+      return bit;
+    };
 
-    return output;
+    const readBits = (count: number): number[] => {
+      if (!hasBits(count)) {
+        throw new Error("Improperly formatted bit array");
+      }
+      const bits = new Array<number>(count);
+      for (let i = 0; i < count; i += 1) {
+        bits[i] = readBit();
+      }
+      return bits;
+    };
+
+    const readNumber = (count: number): number =>
+      parseInt(readBits(count).join(""), 2);
+
+    const readChunk = (count: number): number[] => readBits(count);
+
+    return {
+      readBit,
+      readBits,
+      readNumber,
+      readChunk,
+      hasBits,
+    };
   },
 
   unpackExistence(element: ExistencePack, defaultAttrs: JsonObject = {}): JsonObject[] {
-    const bitArray = Tamper.biterate(element.pack);
+    const reader = Tamper.biterate(element.pack);
     const output = [];
     let counter = 0;
 
-    let cursor = 0;
+    const consumeCC = (): number => reader.readNumber(8);
 
-    const consumeBits = (n: number, array: number[]) => {
-      const end = cursor + n;
-      if (end > array.length) throw new Error("Improperly formatted bit array");
-      const slice = array.slice(cursor, end);
-      cursor = end;
-      return slice;
-    };
+    const consumeNum = (n: number) => reader.readNumber(n);
 
-    const consumeCC = (array: number[]): number => {
-      const ccBits = consumeBits(8, array);
-      return parseInt(ccBits.join(""), 2);
-    };
-
-    const consumeNum = (n: number, array: number[]) =>
-      parseInt(consumeBits(n, array).join(""), 2);
-
-    const consumeChunk = (bytes: number, bits: number, array: number[]) => {
+    const consumeChunk = (bytes: number, bits: number) => {
       const numBits = bytes * 8 + bits;
-      const chunk = consumeBits(numBits, array);
+      const chunk = reader.readChunk(numBits);
       let i = 0;
 
       while (i < numBits) {
@@ -98,52 +93,51 @@ export const Tamper = {
       }
     };
 
-    const processBitArray = (array: number[]) => {
-      if (cursor >= array.length) {
+    const processBitArray = (): JsonObject[] => {
+      if (!reader.hasBits(8)) {
         return output;
       }
-
-      const cc = consumeCC(array);
+      const cc = consumeCC();
       if (cc === 0) {
-        const bytesToConsume = consumeNum(32, array);
-        const bitsToConsume = consumeNum(8, array);
-        consumeChunk(bytesToConsume, bitsToConsume, array);
+        const bytesToConsume = consumeNum(32);
+        const bitsToConsume = consumeNum(8);
+        consumeChunk(bytesToConsume, bitsToConsume);
         if (bitsToConsume > 0) {
-          consumeBits(8 - bitsToConsume, array);
+          reader.readBits(8 - bitsToConsume);
         }
-        return processBitArray(array);
+        return processBitArray();
       }
       if (cc === 1) {
-        const numToSkip = consumeNum(32, array);
+        const numToSkip = consumeNum(32);
         counter += numToSkip;
-        return processBitArray(array);
+        return processBitArray();
       }
       if (cc === 2) {
-        const numToRun = consumeNum(32, array);
+        const numToRun = consumeNum(32);
         for (let i = 0; i < numToRun; i += 1) {
           const attrs = clone(defaultAttrs);
           output.push(extend(attrs, { guid: counter }));
           counter += 1;
         }
-        return processBitArray(array);
+        return processBitArray();
       }
 
       throw new Error(`Unrecognised control code: ${cc}`);
     };
 
-    return processBitArray(bitArray);
+    return processBitArray();
   },
 
   unpackIntegerEncoding(element: AttributePack, numItems: number) {
-    const consumeNum = (array: number[], n: number) =>
-      parseInt(array.splice(0, n).join(""), 2);
-    const bitArray = Tamper.biterate(element.pack);
+    const reader = Tamper.biterate(element.pack);
     const bitWindowWidth = element.bit_window_width;
     const itemWindowWidth = element.item_window_width;
     const itemChunks = itemWindowWidth / bitWindowWidth;
 
-    consumeNum(bitArray, 32);
-    consumeNum(bitArray, 8);
+    const bytesToConsume = reader.readNumber(32);
+    const bitsToConsume = reader.readNumber(8);
+    const totalBits = bytesToConsume * 8 + bitsToConsume;
+    const bitArray = reader.readBits(totalBits);
 
     const getPossibility = (i: number): string | null =>
       i === 0 ? null : element.possibilities[i - 1];
@@ -174,14 +168,13 @@ export const Tamper = {
   },
 
   unpackBitmapEncoding(element: AttributePack): string[][] {
-    const consumeNum = (array: number[], n: number) =>
-      parseInt(array.splice(0, n).join(""), 2);
-    const bitArray = Tamper.biterate(element.pack);
+    const reader = Tamper.biterate(element.pack);
     const itemWindowWidth = element.item_window_width;
+    const bytesToConsume = reader.readNumber(32);
+    const bitsToConsume = reader.readNumber(8);
+    const totalBits = bytesToConsume * 8 + bitsToConsume;
+    const bitArray = reader.readBits(totalBits);
     const chunks = bitArray.length / itemWindowWidth;
-
-    consumeNum(bitArray, 32);
-    consumeNum(bitArray, 8);
 
     const output: string[][] = [];
 
