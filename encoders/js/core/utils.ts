@@ -17,15 +17,23 @@ export function last(arr) {
 }
 
 export function sortBy(obj, iteratee) {
-  return Object.keys(obj)
-    .sort((a, b) => {
-      const av = iteratee(obj[a], a);
-      const bv = iteratee(obj[b], b);
-      if (av < bv) return -1;
-      if (av > bv) return 1;
-      return 0;
-    })
-    .map((key) => obj[key]);
+  // Create array of [key, value, sortValue] to avoid recomputing
+  const entries = Object.keys(obj).map((key) => {
+    const value = obj[key];
+    return [key, value, iteratee(value, key)];
+  });
+
+  // Sort by cached sortValue
+  entries.sort((a, b) => {
+    const av = a[2];
+    const bv = b[2];
+    if (av < bv) return -1;
+    if (av > bv) return 1;
+    return 0;
+  });
+
+  // Extract values
+  return entries.map((entry) => entry[1]);
 }
 
 export function merge(target, source) {
