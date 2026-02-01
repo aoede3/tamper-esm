@@ -5,6 +5,7 @@
     "test:encoders": "tsx ./scripts/compare-encoders.ts",
     "test": "tsx ./scripts/compare-decoders.ts && tsx ./scripts/compare-encoders.ts",
     "inspect": "tsx ./scripts/inspect-pack.ts",
+    "example": "tsx ./scripts/size-comparison.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

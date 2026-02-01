@@ -70,6 +70,31 @@ These strategies are chosen automatically by the encoder based on observed data 
 
 ---
 
+## Performance
+
+Tamper achieves significant compression for categorical tabular data:
+
+- **Sparse datasets**: 10-15x compression (e.g., 500 events across 10K IDs)
+- **Dense multi-value attributes**: 20-30x compression (bitmap encoding)
+- **Very sparse datasets**: 4-5x compression at scale (existence encoding with RLE)
+
+The compression ratio improves with dataset size due to fixed header overhead. See real examples with the size comparison script:
+
+```bash
+npm run example
+```
+
+This script demonstrates four scenarios showing Tamper vs plain JSON size, compression ratios, and the impact of:
+
+- Existence encoding for sparse data
+- Integer encoding for categorical values
+- Bitmap encoding for multi-value attributes
+- Fixed overhead on small vs large datasets
+
+**Note:** These compression ratios are before any transport-level compression. Tamper packs can be further compressed with gzip/brotli for additional gains, often achieving better overall compression than gzip/brotli on plain JSON (due to Tamper's elimination of field name repetition and use of bit-packed encodings).
+
+---
+
 ## Repository structure
 
 ```
@@ -169,7 +194,7 @@ Encoder parity builds packs from test datasets and compares full JSON output aga
 tsx scripts/compare-encoders.ts
 ```
 
-The ESM implementation is considered correct only when **all canonical fixtures match byte-for-byte**.
+The ESM implementation's parity is verified by ensuring all canonical fixtures match byte-for-byte.
 
 ---
 
