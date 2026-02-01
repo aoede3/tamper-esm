@@ -65,18 +65,27 @@ export const Tamper = {
     const output = [];
     let counter = 0;
 
+    let cursor = 0;
+
+    const consumeBits = (n: number, array: number[]) => {
+      const end = cursor + n;
+      if (end > array.length) throw new Error("Improperly formatted bit array");
+      const slice = array.slice(cursor, end);
+      cursor = end;
+      return slice;
+    };
+
     const consumeCC = (array: number[]): number => {
-      if (array.length < 2) throw new Error("Improperly formatted bit array");
-      const ccBits = array.splice(0, 8);
+      const ccBits = consumeBits(8, array);
       return parseInt(ccBits.join(""), 2);
     };
 
     const consumeNum = (n: number, array: number[]) =>
-      parseInt(array.splice(0, n).join(""), 2);
+      parseInt(consumeBits(n, array).join(""), 2);
 
     const consumeChunk = (bytes: number, bits: number, array: number[]) => {
       const numBits = bytes * 8 + bits;
-      const chunk = array.splice(0, numBits);
+      const chunk = consumeBits(numBits, array);
       let i = 0;
 
       while (i < numBits) {
@@ -90,7 +99,7 @@ export const Tamper = {
     };
 
     const processBitArray = (array: number[]) => {
-      if (array.length === 0) {
+      if (cursor >= array.length) {
         return output;
       }
 
@@ -100,7 +109,7 @@ export const Tamper = {
         const bitsToConsume = consumeNum(8, array);
         consumeChunk(bytesToConsume, bitsToConsume, array);
         if (bitsToConsume > 0) {
-          array.splice(0, 8 - bitsToConsume);
+          consumeBits(8 - bitsToConsume, array);
         }
         return processBitArray(array);
       }
