@@ -7,10 +7,10 @@ export default {
     return Buffer.alloc(length);
   },
   writeUInt32BE(buffer: BufferLike, value: number, offset: number): void {
-    buffer.writeUInt32BE(value, offset);
+    (buffer as Buffer).writeUInt32BE(value, offset);
   },
   writeUInt8(buffer: BufferLike, value: number, offset: number): void {
-    buffer.writeUInt8(value, offset);
+    (buffer as Buffer).writeUInt8(value, offset);
   },
   concatBuffers(chunks: BufferLike[]): BufferLike {
     return Buffer.concat(chunks as unknown as Buffer[]);

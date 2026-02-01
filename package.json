@@ -4,7 +4,8 @@
     "test:decoders": "tsx ./scripts/compare-decoders.ts",
     "test:encoders": "tsx ./scripts/compare-encoders.ts",
     "test": "tsx ./scripts/compare-decoders.ts && tsx ./scripts/compare-encoders.ts",
-    "inspect": "tsx ./scripts/inspect-pack.ts"
+    "inspect": "tsx ./scripts/inspect-pack.ts",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^20.12.7",
