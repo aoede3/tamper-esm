@@ -1,0 +1,24 @@
+# Development files
+node_modules
+*.log
+
+# Source files (ship compiled JS instead)
+*.ts
+!*.d.ts
+
+# Build artifacts
+tsconfig.json
+tsconfig.build.json
+tsup.config.ts
+.github
+
+# Test and verification
+test/
+scripts/
+legacy/
+
+# Development tools
+.git
+.gitignore
+.editorconfig
+.vscode

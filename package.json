@@ -1,15 +1,70 @@
 {
+  "name": "@aoede/tamper",
+  "version": "1.0.0",
+  "description": "ESM encoder/decoder for Tamper - a compact format for bulk categorical datasets",
   "type": "module",
+  "keywords": [
+    "tamper",
+    "compression",
+    "categorical",
+    "tabular",
+    "encoding",
+    "bitmap",
+    "rle",
+    "esm"
+  ],
+  "author": "Aoede Ltd",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aoede3/tamper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aoede3/tamper/issues"
+  },
+  "homepage": "https://github.com/aoede3/tamper#readme",
+  "exports": {
+    "./encoder": {
+      "types": "./encoders/js/index.ts",
+      "default": "./dist/encoders/js/index.js"
+    },
+    "./encoder/browser": {
+      "types": "./encoders/js/env/browser.ts",
+      "default": "./dist/encoders/js/env/browser.js"
+    },
+    "./decoder": {
+      "types": "./clients/js/src/tamper.ts",
+      "default": "./dist/clients/js/src/tamper.js"
+    }
+  },
+  "files": [
+    "dist",
+    "encoders",
+    "clients",
+    "vendor",
+    "LICENSE.txt",
+    "README.md"
+  ],
   "scripts": {
+    "build": "tsup",
+    "ci": "npm run build && npm run typecheck && npm run test",
     "test:decoders": "tsx ./scripts/compare-decoders.ts",
     "test:encoders": "tsx ./scripts/compare-encoders.ts",
     "test": "tsx ./scripts/compare-decoders.ts && tsx ./scripts/compare-encoders.ts",
     "inspect": "tsx ./scripts/inspect-pack.ts",
     "example": "tsx ./scripts/size-comparison.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "check-format": "prettier --check .",
+    "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
+    "prepublishOnly": "npm run ci",
+    "local-release": "npm run ci && changeset version && changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.0",
     "@types/node": "^20.12.7",
+    "prettier": "^3.3.3",
+    "tsup": "^8.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.5.4"
   }

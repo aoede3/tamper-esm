@@ -1,0 +1,378 @@
+type BufferLike = Uint8Array;
+type Bitset = {
+    length: number;
+    set(index: number, value: boolean): void;
+    setSize(size: number): void;
+    slice(begin: number, end: number): Bitset;
+    getBuffer(): BufferLike;
+};
+type EncoderEnv = {
+    createBuffer(length: number): BufferLike;
+    writeUInt32BE(buffer: BufferLike, value: number, offset: number): void;
+    writeUInt8(buffer: BufferLike, value: number, offset: number): void;
+    concatBuffers(chunks: BufferLike[]): BufferLike;
+    toBase64(buffer: BufferLike): string;
+    createBitset(size: number): Bitset;
+};
+declare function createEncoder(env: EncoderEnv): {
+    Bitpusher: {
+        new (): {
+            bitset: Bitset;
+            length: number;
+            capacity: number;
+            push(bit: number | boolean): void;
+            pushMany(bit: number | boolean, howMany: number): void;
+            clear(): void;
+            slice(begin: number, end: number): /*elided*/ any;
+            getBuffer(): BufferLike;
+            isEmpty(): boolean;
+        };
+    };
+    createPackSet: () => {
+        meta: Record<string, unknown>;
+        existencePack: {
+            lastGuid: number;
+            runCounter: number;
+            bitpusher: {
+                bitset: Bitset;
+                length: number;
+                capacity: number;
+                push(bit: number | boolean): void;
+                pushMany(bit: number | boolean, howMany: number): void;
+                clear(): void;
+                slice(begin: number, end: number): /*elided*/ any;
+                getBuffer(): BufferLike;
+                isEmpty(): boolean;
+            };
+            outputBuffers: BufferLike[];
+            controlCodes: Array<{
+                type: "keep" | "skip" | "run";
+                offset: number;
+                buffer?: BufferLike;
+            }>;
+            output?: unknown;
+            initializePack(_maxGuid: number, _numItems: number): void;
+            encode(guid: number): void;
+            finalizePack(): void;
+            toPlainObject(): Record<string, unknown>;
+            dumpKeep(bitpusher: {
+                bitset: Bitset;
+                length: number;
+                capacity: number;
+                push(bit: number | boolean): void;
+                pushMany(bit: number | boolean, howMany: number): void;
+                clear(): void;
+                slice(begin: number, end: number): /*elided*/ any;
+                getBuffer(): BufferLike;
+                isEmpty(): boolean;
+            }, runLen: number): void;
+            controlCode(cmd: "keep" | "skip" | "run", offset?: number): BufferLike;
+            possibilities: string[];
+            attrName: string;
+            maxChoices: number;
+            meta: Record<string, unknown>;
+            possIndex: Map<string, number>;
+            encoding: string | null;
+            bitWindowWidth: number | null;
+            itemWindowWidth: number | null;
+            buffer: BufferLike | null;
+            maxGuid: number;
+            baseOffset: number;
+            numItems: number;
+            encodedBitset(): string | undefined;
+        };
+        attrPacks: Record<string, {
+            possibilities: string[];
+            attrName: string;
+            maxChoices: number;
+            meta: Record<string, unknown>;
+            possIndex: Map<string, number>;
+            encoding: string | null;
+            bitWindowWidth: number | null;
+            itemWindowWidth: number | null;
+            buffer: BufferLike | null;
+            maxGuid: number;
+            baseOffset: number;
+            numItems: number;
+            toPlainObject(): any;
+            finalizePack(): void;
+            initializePack(_maxGuid: number, _numItems: number): void;
+            encode(_idx: number, _data: Record<string, unknown>): void;
+            encodedBitset(): string | undefined;
+        }>;
+        bufferedAttrs: Record<string, Record<string, unknown>>;
+        addAttribute(opts: {
+            [key: string]: unknown;
+            attrName: string;
+            possibilities: unknown[];
+            maxChoices: number;
+        }): any;
+        addBufferedAttribute(opts: {
+            [key: string]: unknown;
+            attr_name?: string;
+            attrName?: string;
+        }): void;
+        attributes(): string[];
+        packFor(attr: string): {
+            possibilities: string[];
+            attrName: string;
+            maxChoices: number;
+            meta: Record<string, unknown>;
+            possIndex: Map<string, number>;
+            encoding: string | null;
+            bitWindowWidth: number | null;
+            itemWindowWidth: number | null;
+            buffer: BufferLike | null;
+            maxGuid: number;
+            baseOffset: number;
+            numItems: number;
+            toPlainObject(): any;
+            finalizePack(): void;
+            initializePack(_maxGuid: number, _numItems: number): void;
+            encode(_idx: number, _data: Record<string, unknown>): void;
+            encodedBitset(): string | undefined;
+        };
+        pack(data: Record<string, unknown>[], opts?: Record<string, unknown>): void;
+        buildPack(opts: Record<string, unknown>, items: Record<string, unknown>[]): void;
+        buildUnorderedPack(opts: Record<string, unknown>, items: Record<string, unknown>[]): void;
+        toPlainObject(opts?: Record<string, unknown>): any;
+        toJSON(): string;
+    };
+    PackSet: {
+        new (opts?: Record<string, unknown>): {
+            meta: Record<string, unknown>;
+            existencePack: {
+                lastGuid: number;
+                runCounter: number;
+                bitpusher: {
+                    bitset: Bitset;
+                    length: number;
+                    capacity: number;
+                    push(bit: number | boolean): void;
+                    pushMany(bit: number | boolean, howMany: number): void;
+                    clear(): void;
+                    slice(begin: number, end: number): /*elided*/ any;
+                    getBuffer(): BufferLike;
+                    isEmpty(): boolean;
+                };
+                outputBuffers: BufferLike[];
+                controlCodes: Array<{
+                    type: "keep" | "skip" | "run";
+                    offset: number;
+                    buffer?: BufferLike;
+                }>;
+                output?: unknown;
+                initializePack(_maxGuid: number, _numItems: number): void;
+                encode(guid: number): void;
+                finalizePack(): void;
+                toPlainObject(): Record<string, unknown>;
+                dumpKeep(bitpusher: {
+                    bitset: Bitset;
+                    length: number;
+                    capacity: number;
+                    push(bit: number | boolean): void;
+                    pushMany(bit: number | boolean, howMany: number): void;
+                    clear(): void;
+                    slice(begin: number, end: number): /*elided*/ any;
+                    getBuffer(): BufferLike;
+                    isEmpty(): boolean;
+                }, runLen: number): void;
+                controlCode(cmd: "keep" | "skip" | "run", offset?: number): BufferLike;
+                possibilities: string[];
+                attrName: string;
+                maxChoices: number;
+                meta: Record<string, unknown>;
+                possIndex: Map<string, number>;
+                encoding: string | null;
+                bitWindowWidth: number | null;
+                itemWindowWidth: number | null;
+                buffer: BufferLike | null;
+                maxGuid: number;
+                baseOffset: number;
+                numItems: number;
+                encodedBitset(): string | undefined;
+            };
+            attrPacks: Record<string, {
+                possibilities: string[];
+                attrName: string;
+                maxChoices: number;
+                meta: Record<string, unknown>;
+                possIndex: Map<string, number>;
+                encoding: string | null;
+                bitWindowWidth: number | null;
+                itemWindowWidth: number | null;
+                buffer: BufferLike | null;
+                maxGuid: number;
+                baseOffset: number;
+                numItems: number;
+                toPlainObject(): any;
+                finalizePack(): void;
+                initializePack(_maxGuid: number, _numItems: number): void;
+                encode(_idx: number, _data: Record<string, unknown>): void;
+                encodedBitset(): string | undefined;
+            }>;
+            bufferedAttrs: Record<string, Record<string, unknown>>;
+            addAttribute(opts: {
+                [key: string]: unknown;
+                attrName: string;
+                possibilities: unknown[];
+                maxChoices: number;
+            }): any;
+            addBufferedAttribute(opts: {
+                [key: string]: unknown;
+                attr_name?: string;
+                attrName?: string;
+            }): void;
+            attributes(): string[];
+            packFor(attr: string): {
+                possibilities: string[];
+                attrName: string;
+                maxChoices: number;
+                meta: Record<string, unknown>;
+                possIndex: Map<string, number>;
+                encoding: string | null;
+                bitWindowWidth: number | null;
+                itemWindowWidth: number | null;
+                buffer: BufferLike | null;
+                maxGuid: number;
+                baseOffset: number;
+                numItems: number;
+                toPlainObject(): any;
+                finalizePack(): void;
+                initializePack(_maxGuid: number, _numItems: number): void;
+                encode(_idx: number, _data: Record<string, unknown>): void;
+                encodedBitset(): string | undefined;
+            };
+            pack(data: Record<string, unknown>[], opts?: Record<string, unknown>): void;
+            buildPack(opts: Record<string, unknown>, items: Record<string, unknown>[]): void;
+            buildUnorderedPack(opts: Record<string, unknown>, items: Record<string, unknown>[]): void;
+            toPlainObject(opts?: Record<string, unknown>): any;
+            toJSON(): string;
+        };
+        DEFAULT_GUID_ATTR: string;
+    };
+    createPack: (attrName: string, possibilities: unknown[], maxChoices: number) => any;
+    Pack: {
+        new (attrName: string, possibilities: unknown[], maxChoices: number): {
+            possibilities: string[];
+            attrName: string;
+            maxChoices: number;
+            meta: Record<string, unknown>;
+            possIndex: Map<string, number>;
+            encoding: string | null;
+            bitWindowWidth: number | null;
+            itemWindowWidth: number | null;
+            buffer: BufferLike | null;
+            maxGuid: number;
+            baseOffset: number;
+            numItems: number;
+            toPlainObject(): any;
+            finalizePack(): void;
+            initializePack(_maxGuid: number, _numItems: number): void;
+            encode(_idx: number, _data: Record<string, unknown>): void;
+            encodedBitset(): string | undefined;
+        };
+    };
+    IntegerPack: {
+        new (attrName: string, possibilities: unknown[], maxChoices: number): {
+            encode(idx: number, data: Record<string, unknown>): void;
+            initializePack(maxGuid: number, numItems: number): void;
+            possibilities: string[];
+            attrName: string;
+            maxChoices: number;
+            meta: Record<string, unknown>;
+            possIndex: Map<string, number>;
+            encoding: string | null;
+            bitWindowWidth: number | null;
+            itemWindowWidth: number | null;
+            buffer: BufferLike | null;
+            maxGuid: number;
+            baseOffset: number;
+            numItems: number;
+            toPlainObject(): any;
+            finalizePack(): void;
+            encodedBitset(): string | undefined;
+        };
+        HEADER_OCTETS: number;
+    };
+    BitmapPack: {
+        new (attrName: string, possibilities: unknown[], maxChoices: number): {
+            encode(idx: number, data: Record<string, unknown>): void;
+            initializePack(maxGuid: number, numItems: number): void;
+            possibilities: string[];
+            attrName: string;
+            maxChoices: number;
+            meta: Record<string, unknown>;
+            possIndex: Map<string, number>;
+            encoding: string | null;
+            bitWindowWidth: number | null;
+            itemWindowWidth: number | null;
+            buffer: BufferLike | null;
+            maxGuid: number;
+            baseOffset: number;
+            numItems: number;
+            toPlainObject(): any;
+            finalizePack(): void;
+            encodedBitset(): string | undefined;
+        };
+        HEADER_OCTETS: number;
+    };
+    ExistencePack: {
+        new (): {
+            lastGuid: number;
+            runCounter: number;
+            bitpusher: {
+                bitset: Bitset;
+                length: number;
+                capacity: number;
+                push(bit: number | boolean): void;
+                pushMany(bit: number | boolean, howMany: number): void;
+                clear(): void;
+                slice(begin: number, end: number): /*elided*/ any;
+                getBuffer(): BufferLike;
+                isEmpty(): boolean;
+            };
+            outputBuffers: BufferLike[];
+            controlCodes: Array<{
+                type: "keep" | "skip" | "run";
+                offset: number;
+                buffer?: BufferLike;
+            }>;
+            output?: unknown;
+            initializePack(_maxGuid: number, _numItems: number): void;
+            encode(guid: number): void;
+            finalizePack(): void;
+            toPlainObject(): Record<string, unknown>;
+            dumpKeep(bitpusher: {
+                bitset: Bitset;
+                length: number;
+                capacity: number;
+                push(bit: number | boolean): void;
+                pushMany(bit: number | boolean, howMany: number): void;
+                clear(): void;
+                slice(begin: number, end: number): /*elided*/ any;
+                getBuffer(): BufferLike;
+                isEmpty(): boolean;
+            }, runLen: number): void;
+            controlCode(cmd: "keep" | "skip" | "run", offset?: number): BufferLike;
+            possibilities: string[];
+            attrName: string;
+            maxChoices: number;
+            meta: Record<string, unknown>;
+            possIndex: Map<string, number>;
+            encoding: string | null;
+            bitWindowWidth: number | null;
+            itemWindowWidth: number | null;
+            buffer: BufferLike | null;
+            maxGuid: number;
+            baseOffset: number;
+            numItems: number;
+            encodedBitset(): string | undefined;
+        };
+        KEEP: number;
+        SKIP: number;
+        RUN: number;
+    };
+};
+
+export { type Bitset, createEncoder as default };
