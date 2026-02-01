@@ -101,10 +101,8 @@ export const Tamper = {
       }
     };
 
-    const processBitArray = (): JsonObject[] => {
-      if (!reader.hasBits(8)) {
-        return output;
-      }
+    // Process control codes iteratively to avoid stack overflow
+    while (reader.hasBits(8)) {
       const cc = consumeCC();
       if (cc === 0) {
         const bytesToConsume = consumeNum(32);
@@ -113,27 +111,22 @@ export const Tamper = {
         if (bitsToConsume > 0) {
           reader.readBits(8 - bitsToConsume);
         }
-        return processBitArray();
-      }
-      if (cc === 1) {
+      } else if (cc === 1) {
         const numToSkip = consumeNum(32);
         counter += numToSkip;
-        return processBitArray();
-      }
-      if (cc === 2) {
+      } else if (cc === 2) {
         const numToRun = consumeNum(32);
         for (let i = 0; i < numToRun; i += 1) {
           const attrs = clone(defaultAttrs);
           output.push(extend(attrs, { guid: counter }));
           counter += 1;
         }
-        return processBitArray();
+      } else {
+        throw new Error(`Unrecognised control code: ${cc}`);
       }
+    }
 
-      throw new Error(`Unrecognised control code: ${cc}`);
-    };
-
-    return processBitArray();
+    return output;
   },
 
   unpackIntegerEncoding(element: AttributePack, numItems: number) {
