@@ -11,6 +11,12 @@ describe("IntegerPack", () => {
   });
 
   describe("initialization", () => {
+    it("throws when possibilities are missing", () => {
+      const encoder = createEncoder(nodeEnv);
+      const Pack = encoder.Pack;
+      expect(() => new Pack("attr", null as any, 1)).toThrow(/Possibilities/);
+    });
+
     it("creates pack with integer encoding", () => {
       const pack = new IntegerPack("attr", ["a", "b", "c"], 1);
       expect(pack.encoding).toBe("integer");
@@ -32,6 +38,12 @@ describe("IntegerPack", () => {
   });
 
   describe("bit window width calculation", () => {
+    it("defaults to 1 when possibilities are empty", () => {
+      const pack = new IntegerPack("attr", [], 1);
+      pack.initializePack(10, 1);
+      expect(pack.bitWindowWidth).toBe(1);
+    });
+
     it("calculates correct width for 2 possibilities", () => {
       const pack = new IntegerPack("attr", ["a", "b"], 1);
       pack.initializePack(10, 5);
@@ -282,6 +294,16 @@ describe("IntegerPack", () => {
 
       pack.finalizePack();
       expect(pack.encodedBitset()).toBeDefined();
+    });
+  });
+
+  describe("toPlainObject()", () => {
+    it("defaults max_guid to 0 when null", () => {
+      const pack = new IntegerPack("attr", ["a"], 1);
+      pack.maxGuid = null as unknown as number;
+
+      const obj = pack.toPlainObject();
+      expect(obj.max_guid).toBe(0);
     });
   });
 });

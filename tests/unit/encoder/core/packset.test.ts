@@ -204,6 +204,23 @@ describe("PackSet", () => {
   });
 
   describe("pack()", () => {
+    it("packs data with null options", () => {
+      const ps = createPackSet();
+      ps.addAttribute({
+        attrName: "attr",
+        possibilities: ["a", "b"],
+        maxChoices: 1,
+      });
+
+      const data = [
+        { id: 0, attr: "a" },
+        { id: 1, attr: "b" },
+      ];
+
+      ps.pack(data, null as unknown as Record<string, unknown>);
+      expect(ps.existencePack.buffer).toBeDefined();
+    });
+
     it("packs data with default guid attribute", () => {
       const ps = createPackSet();
       ps.addAttribute({
@@ -304,6 +321,21 @@ describe("PackSet", () => {
   });
 
   describe("buildPack()", () => {
+    it("defaults guidAttr when provided as empty string", () => {
+      const ps = createPackSet();
+      ps.addAttribute({
+        attrName: "attr",
+        possibilities: ["a"],
+        maxChoices: 1,
+      });
+
+      ps.buildPack({ maxGuid: 0, numItems: 1, guidAttr: "" }, [
+        { id: 0, attr: "a" },
+      ]);
+
+      expect(ps.existencePack.buffer).toBeDefined();
+    });
+
     it("requires numItems option", () => {
       const ps = createPackSet();
       expect(() => ps.buildPack({ maxGuid: 10 }, [])).toThrow(/numItems/);

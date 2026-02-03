@@ -331,6 +331,23 @@ describe("Biterate - Bit Stream Reading", () => {
   });
 
   describe("error conditions", () => {
+    it("throws when readBit exceeds available bits", () => {
+      const reader = Tamper.biterate("");
+      expect(() => reader.readBit()).toThrow(/Improperly formatted bit array/);
+    });
+
+    it("throws when readBits exceeds available bits", () => {
+      const base64 = Buffer.from([0xff]).toString("base64");
+      const reader = Tamper.biterate(base64);
+
+      expect(() => reader.readBits(16)).toThrow(/Improperly formatted bit array/);
+    });
+
+    it("throws when readNumber exceeds available bits", () => {
+      const reader = Tamper.biterate("");
+      expect(() => reader.readNumber(1)).toThrow(/Improperly formatted bit array/);
+    });
+
     it("handles reading past buffer end", () => {
       const base64 = Buffer.from([0xff]).toString("base64");
       const reader = Tamper.biterate(base64);

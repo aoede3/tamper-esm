@@ -1,16 +1,12 @@
 import type { AttributePack, ExistencePack, JsonObject, PackData } from "./types.ts";
 
 const hasAtob = typeof globalThis.atob === "function";
-const hasBuffer = typeof (globalThis as { Buffer?: typeof Buffer }).Buffer === "function";
 
 function decodeBase64(encoded: string): string {
   if (hasAtob) {
     return globalThis.atob(encoded);
   }
-  if (hasBuffer) {
-    return (globalThis as { Buffer: typeof Buffer }).Buffer.from(encoded, "base64").toString("binary");
-  }
-  throw new Error("No base64 decoder available (expected atob or Buffer).");
+  return (globalThis as { Buffer: typeof Buffer }).Buffer.from(encoded, "base64").toString("binary");
 }
 
 function clone(obj: JsonObject): JsonObject {

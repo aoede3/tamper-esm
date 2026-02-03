@@ -215,6 +215,14 @@ describe("ExistencePack", () => {
   });
 
   describe("finalizePack()", () => {
+    it("handles keep control code without buffer", () => {
+      const pack = new ExistencePack();
+      pack.controlCodes.push({ type: "keep", offset: 0 });
+      pack.finalizePack();
+
+      expect(pack.buffer.length).toBe(6);
+    });
+
     it("converts control codes to buffer", () => {
       const pack = new ExistencePack();
       for (let i = 0; i < 5; i++) pack.encode(i);
@@ -321,6 +329,14 @@ describe("ExistencePack", () => {
   });
 
   describe("toPlainObject()", () => {
+    it("defaults max_guid to 0 when null", () => {
+      const pack = new ExistencePack();
+      pack.maxGuid = null as unknown as number;
+
+      const obj = pack.toPlainObject();
+      expect(obj.max_guid).toBe(0);
+    });
+
     it("returns existence pack structure", () => {
       const pack = new ExistencePack();
       pack.encode(0);
@@ -435,6 +451,18 @@ describe("ExistencePack", () => {
   });
 
   describe("run counter management", () => {
+    it("flushes long run before small gap", () => {
+      const pack = new ExistencePack();
+
+      for (let i = 0; i <= 41; i++) {
+        pack.encode(i);
+      }
+
+      pack.encode(43); // guidDiff = 2 triggers runCounter > 40 branch
+
+      expect(pack.runCounter).toBe(1);
+    });
+
     it("resets run counter after SKIP", () => {
       const pack = new ExistencePack();
       pack.encode(0);

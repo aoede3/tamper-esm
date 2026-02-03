@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { Buffer as NodeBuffer } from "buffer";
 import browserEnv from "@/encoders/js/env/browser";
 
 describe("Browser Environment Adapter", () => {
@@ -120,6 +121,56 @@ describe("Browser Environment Adapter", () => {
   });
 
   describe("toBase64()", () => {
+    it("encodes bytes to base64 using btoa when Buffer is unavailable", () => {
+      const originalBuffer = (globalThis as { Buffer?: unknown }).Buffer;
+      const originalBtoa = (globalThis as { btoa?: (value: string) => string }).btoa;
+
+      try {
+        (globalThis as { Buffer?: unknown }).Buffer = undefined;
+        (globalThis as { btoa?: (value: string) => string }).btoa = (value: string) =>
+          NodeBuffer.from(value, "binary").toString("base64");
+
+        const bytes = new Uint8Array([72, 101, 108, 108, 111]);
+        const result = browserEnv.toBase64(bytes);
+        expect(result).toBe("SGVsbG8=");
+      } finally {
+        if (originalBuffer === undefined) {
+          delete (globalThis as { Buffer?: unknown }).Buffer;
+        } else {
+          (globalThis as { Buffer?: unknown }).Buffer = originalBuffer;
+        }
+        if (originalBtoa === undefined) {
+          delete (globalThis as { btoa?: (value: string) => string }).btoa;
+        } else {
+          (globalThis as { btoa?: (value: string) => string }).btoa = originalBtoa;
+        }
+      }
+    });
+
+    it("throws when no base64 encoder is available", () => {
+      const originalBuffer = (globalThis as { Buffer?: unknown }).Buffer;
+      const originalBtoa = (globalThis as { btoa?: (value: string) => string }).btoa;
+
+      try {
+        (globalThis as { Buffer?: unknown }).Buffer = undefined;
+        delete (globalThis as { btoa?: (value: string) => string }).btoa;
+
+        const bytes = new Uint8Array([1, 2, 3]);
+        expect(() => browserEnv.toBase64(bytes)).toThrow(/No base64 encoder available/);
+      } finally {
+        if (originalBuffer === undefined) {
+          delete (globalThis as { Buffer?: unknown }).Buffer;
+        } else {
+          (globalThis as { Buffer?: unknown }).Buffer = originalBuffer;
+        }
+        if (originalBtoa === undefined) {
+          delete (globalThis as { btoa?: (value: string) => string }).btoa;
+        } else {
+          (globalThis as { btoa?: (value: string) => string }).btoa = originalBtoa;
+        }
+      }
+    });
+
     it("encodes bytes to base64 using Buffer", () => {
       const bytes = new Uint8Array([72, 101, 108, 108, 111]); // "Hello"
       const result = browserEnv.toBase64(bytes);
@@ -245,6 +296,16 @@ describe("Browser Environment Adapter", () => {
     });
 
     describe("slice()", () => {
+      it("handles shifted slice within one byte", () => {
+        const bitset = browserEnv.createBitset(8);
+        bitset.bytes[0] = 0b11110000;
+
+        const sliced = bitset.slice(1, 8);
+
+        expect(sliced.length).toBe(7);
+        expect(sliced.bytes.length).toBe(1);
+      });
+
       it("slices byte-aligned section", () => {
         const bitset = browserEnv.createBitset(16);
         bitset.bytes[0] = 0xaa;

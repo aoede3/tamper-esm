@@ -94,6 +94,27 @@ describe("Encoder Utilities", () => {
     });
   });
 
+
+    it("merges array indices deeply", () => {
+      const target = [[1], { a: 1 }, "x"];
+      const source = [[2, 3], { b: 2 }, "y"];
+
+      const result = merge(target, source);
+
+      expect(result[0]).toEqual([2, 3]);
+      expect(result[1]).toEqual({ a: 1, b: 2 });
+      expect(result[2]).toBe("y");
+    });
+
+    it("skips sparse array entries in source", () => {
+      const target = [1, 2, 3];
+      const source = [] as number[];
+      source[2] = 9;
+
+      const result = merge(target, source);
+
+      expect(result).toEqual([1, 2, 9]);
+    });
   describe("values()", () => {
     it("extracts object values", () => {
       expect(values({ a: 1, b: 2, c: 3 })).toEqual([1, 2, 3]);
@@ -139,6 +160,13 @@ describe("Encoder Utilities", () => {
   });
 
   describe("sortBy()", () => {
+    it("handles equal sort values", () => {
+      const obj = { a: 1, b: 1, c: 0 };
+      const result = sortBy(obj, (v) => v);
+      expect(result[0]).toBe(0);
+      expect(result.slice(1)).toEqual([1, 1]);
+    });
+
     it("sorts by numeric keys", () => {
       const obj = { "3": "c", "1": "a", "2": "b" };
       const result = sortBy(obj, (v, k) => k);
