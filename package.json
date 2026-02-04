@@ -13,7 +13,7 @@
     "rle",
     "esm"
   ],
-  "author": "Aoede Ltd",
+  "author": "John Smith | Aoede <tamper@aoede.uk.net> (https://www.aoede.uk.net)",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

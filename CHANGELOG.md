@@ -1,6 +1,6 @@
 # @aoede/tamper
 
-## 1.0.0
+v1.0.0- 04/02/2026
 
 ### Major Changes
 

@@ -8,3 +8,4 @@ clients/js/test/node_modules
 examples/tmp
 node_modules
 coverage
+dist/*

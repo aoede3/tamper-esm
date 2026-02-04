@@ -17,6 +17,14 @@ Tamper is a **column-oriented packer for tabular categorical data** (low-cardina
 
 ---
 
+`npm install @aoede/tamper`
+
+`yarn add @aoede/tamper`
+
+`pnpm add @aoede/tamper`
+
+---
+
 ## When to use this
 
 Tamper is a good fit when your data is:
@@ -135,11 +143,11 @@ Exports:
 - default export - alias of `createTamper`
 
 ```js
-import createTamper from "./clients/js/src/tamper.ts";
-import fs from "node:fs/promises";
+import createTamper from './clients/js/src/tamper.ts';
+import fs from 'node:fs/promises';
 
 const tamper = createTamper();
-const pack = JSON.parse(await fs.readFile("pack.json", "utf8"));
+const pack = JSON.parse(await fs.readFile('pack.json', 'utf8'));
 const items = tamper.unpackData(pack);
 ```
 
@@ -158,7 +166,7 @@ Exports:
 - `Pack`, `IntegerPack`, `BitmapPack`, `ExistencePack`
 
 ```js
-import { createPackSet } from "./encoders/js/index.ts";
+import { createPackSet } from './encoders/js/index.ts';
 
 const tamp = createPackSet();
 // configure attributes + pack data...
@@ -168,8 +176,8 @@ const json = tamp.toJSON();
 Browser / edge example:
 
 ```js
-import createEncoder from "./encoders/js/core/createEncoder.ts";
-import browserEnv from "./encoders/js/env/browser.ts";
+import createEncoder from './encoders/js/core/createEncoder.ts';
+import browserEnv from './encoders/js/env/browser.ts';
 
 const { createPackSet } = createEncoder(browserEnv);
 
